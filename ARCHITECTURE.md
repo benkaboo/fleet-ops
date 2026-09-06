@@ -28,6 +28,20 @@
 * **Endpoint:** `203.132.95.12:51820`
 * **Allowed IPs:** `10.10.0.0/24`, `192.168.6.0/24`
 * **Persistent Keepalive:** 25 seconds
+* **Systemd Service:** `wg-quick@wg0.service` (`enabled` on boot)
+
+### 2.1. Gateway & NAT Forwarding (Cross-Subnet Access)
+
+To enable client devices on the local LAN (`192.168.68.0/24`) to route to the remote subnet (`192.168.6.0/24`) through Proxmox without requiring changes to the remote peer's routing or AllowedIPs:
+
+* **Kernel IPv4 Forwarding:** `net.ipv4.ip_forward = 1`
+* **NAT Masquerade:** `iptables -t nat -A POSTROUTING -o wg0 -j MASQUERADE`
+* **Filter Forwarding Rules:**
+  * Outbound to remote LAN: `iptables -A FORWARD -d 192.168.6.0/24 -o wg0 -j ACCEPT`
+  * Inbound return traffic: `iptables -A FORWARD -i wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT`
+* **Workstation Route:**
+  * Windows route: `route -p add 192.168.6.0 mask 255.255.255.0 192.168.68.169`
+
 
 ---
 
@@ -96,5 +110,27 @@ agy-auditor ALL=(ALL) NOPASSWD: \
     /usr/sbin/qm list, \
     /usr/bin/systemctl status *
 ```
+
+### 4.3. Scoped Operational Privileges (`/etc/sudoers.d/agy-wireguard`)
+
+Temporary scoped permissions allowing `agy-auditor` to manage WireGuard lifecycle, kernel routing, and firewall rules:
+
+```sudoers
+agy-auditor ALL=(ALL) NOPASSWD: \
+    /usr/bin/systemctl enable wg-quick@wg0*, \
+    /usr/bin/systemctl disable wg-quick@wg0*, \
+    /usr/bin/systemctl start wg-quick@wg0*, \
+    /usr/bin/systemctl stop wg-quick@wg0*, \
+    /usr/bin/systemctl restart wg-quick@wg0*, \
+    /usr/sbin/sysctl -w net.ipv4.ip_forward=*, \
+    /usr/sbin/sysctl -p*, \
+    /usr/sbin/iptables -t nat -A POSTROUTING *, \
+    /usr/sbin/iptables -t nat -C POSTROUTING *, \
+    /usr/sbin/iptables -t nat -D POSTROUTING *, \
+    /usr/sbin/iptables -A FORWARD *, \
+    /usr/sbin/iptables -C FORWARD *, \
+    /usr/sbin/iptables -D FORWARD *
+```
+
 
 Any mutating operations (e.g., `iptables -F`, `systemctl restart`, `wg set`, `pct start/stop`) are strictly denied.
