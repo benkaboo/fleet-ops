@@ -17,6 +17,7 @@
 | `vmbr1` | Linux Bridge | Unassigned | DOWN | Secondary bridge |
 | `wg0` | WireGuard Interface | `10.10.0.4/24` | UP | WireGuard VPN tunnel (Port: `40846`) |
 | `veth910i0` | Virtual Ethernet | Attached to `vmbr0` | UP | Virtual interface for LXC 910 (`codebox`) |
+| `veth920i0` | Virtual Ethernet | Attached to `vmbr0` | UP | Virtual interface for LXC 920 (`services`) |
 
 ### Routing Table
 * `default via 192.168.68.1 dev vmbr0`
@@ -92,8 +93,28 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 | VMID | Type | Name | Status | Memory | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 910 | LXC | `codebox` | Running | - | Development container (`192.168.68.172`) |
+| 920 | LXC | `services` | Running | 4096 MB | Docker services host (`192.168.68.175/24`), Ubuntu 24.04, 4 vCPUs |
 | 900 | QEMU | `openwrt` | Stopped | 512 MB | Virtual router / firewall |
 | 901 | QEMU | `test-lan` | Stopped | 512 MB | Isolated test LAN environment |
+
+### 4.1. Dedicated Microservices & Docker Host (LXC 920: `services`)
+
+* **Container Specifications:**
+  * **OS / Template:** Ubuntu 24.04 LTS unprivileged LXC container.
+  * **Network:** Static IP `192.168.68.175/24`, Gateway `192.168.68.1`, attached to `vmbr0`.
+  * **Resources:** 4 vCPUs, 4096 MB RAM, 32 GB SSD root disk on `local-lvm`.
+  * **LXC Features:** `nesting=1,keyctl=1` (required for Docker Engine and secure keyrings).
+* **Storage Mounts:**
+  * **SSD Fast Data Root (`/opt/stacks`):** Stores Compose files, container configurations, and local application databases (e.g. Authelia SQLite).
+  * **Btrfs Media/Pool Bind Mount (`mp0`):** Pass-through from host `/mnt/data/@simba` to container `/mnt/simba` (`/mnt/simba/{Books,Documents,Media,Scripts}`).
+* **Docker Network Topology:**
+  * **Bridge Network (`gateway_net`):** Dedicated internal bridge network connecting edge proxies and application services without exposing container ports to the external LAN unnecessarily.
+* **Service Stack Inventory:**
+  * **Dockge** (`/opt/stacks/dockge/compose.yaml`): Web Compose management UI exposed on port `5001`.
+  * **Caddy Reverse Proxy** (`/opt/stacks/caddy/compose.yaml`): Edge HTTP/HTTPS reverse proxy on host ports `80` and `443`, joined to `gateway_net`.
+  * **Authelia SSO & 2FA** (`/opt/stacks/authelia/compose.yaml`): Centralized authentication portal exposed on port `9091` and joined to `gateway_net`. Session cookies scoped to `192.168.68.175.nip.io`. User database uses Argon2id password hashing; storage backed by `/opt/stacks/authelia/data/db.sqlite3`.
+* **Deployment Automation:**
+  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `06-deploy-authelia.sh`).
 
 ---
 
