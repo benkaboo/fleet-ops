@@ -130,8 +130,16 @@ pct exec "$VMID" -- docker exec caddy caddy validate --config /etc/caddy/Caddyfi
 echo "[*] Restarting Caddy to load Calibre-Web route..."
 pct exec "$VMID" -- docker restart caddy
 
-echo "[*] Waiting for Calibre-Web to initialize (10s)..."
-sleep 10
+echo "[*] Waiting for Calibre-Web to complete initialization and mod downloads..."
+HTTP_CODE="000"
+for i in {1..20}; do
+    HTTP_CODE=$(pct exec "$VMID" -- curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${CALIBRE_PORT}/" 2>/dev/null || echo "000")
+    if [[ "$HTTP_CODE" == "200" || "$HTTP_CODE" == "302" ]]; then
+        break
+    fi
+    echo "    Waiting for Calibre-Web web server to respond... ($((i*3))s)"
+    sleep 3
+done
 
 # ------------------------------------------------------------------------------
 # 3. Exit Condition Validation
@@ -149,7 +157,6 @@ fi
 
 # Verify port response inside container
 echo "[*] Testing direct HTTP response on port $CALIBRE_PORT..."
-HTTP_CODE=$(pct exec "$VMID" -- curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${CALIBRE_PORT}/" || echo "000")
 if [[ "$HTTP_CODE" -ne 200 && "$HTTP_CODE" -ne 302 ]]; then
     echo "[!] Validation Failure: Direct Calibre-Web HTTP probe returned '$HTTP_CODE', expected 200 or 302."
     pct exec "$VMID" -- docker logs calibre-web --tail 25
