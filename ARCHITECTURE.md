@@ -48,7 +48,46 @@ To enable client devices on the local LAN (`192.168.68.0/24`) to route to the re
 
 ---
 
-## 3. Virtualization Inventory
+## 3. Storage & Filesystem Architecture
+
+### 3.1. Drive Layout & Btrfs RAID1 Pool
+
+Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`raid1` data and metadata):
+
+| Device | Partition | Physical Disk | Size | Role / Filesystem |
+| :--- | :--- | :--- | :--- | :--- |
+| `/dev/sdd` | `/dev/sdd1` | Seagate IronWolf (`ST4000VN008`) | 3.6 TB | Member of Btrfs pool `data` |
+| `/dev/sde` | `/dev/sde1` | WD Red (`WD40EFRX`) | 3.6 TB | Member of Btrfs pool `data` |
+| `/dev/sdc` | `/dev/sdc1` | WD Purple (`WD30PURX`) | 2.7 TB | Member of Btrfs pool `data` |
+| `/dev/sdb` | *(None)* | Crucial BX500 SSD (`CT1000BX500SSD1`) | 931.5 GB | Spare unallocated flash drive |
+| `/dev/sda` | `/dev/sda1..3` | Crucial BX500 SSD (`CT1000BX500SSD1`) | 931.5 GB | PVE Host Boot / OS / LVM thin pool |
+
+* **Pool Mount Point:** `/mnt/data`
+* **Usable Protected Storage:** $\approx 4.95\text{ TB}$ (1-disk fault tolerance).
+* **Mount Parameters (`/etc/fstab`):**
+  ```fstab
+  UUID=<FS_UUID>  /mnt/data  btrfs  defaults,noatime,compress=zstd:1,space_cache=v2,nofail,x-systemd.device-timeout=15s  0  2
+  ```
+* **Subvolume Layout:**
+  * `/mnt/data/@simba` — Primary Windows Samba network share.
+  * `/mnt/data/@shares` — Secondary / general network storage.
+  * `/mnt/data/@backups` — Proxmox host and client backup datasets.
+
+### 3.2. Windows File Sharing (Samba / SMB3)
+
+* **Service Daemon:** `smbd.service` (managed via systemd, auto-enabled).
+* **Discovery Daemon:** `wsdd.service` (Web Services Dynamic Discovery for Windows Explorer).
+* **Share Name:** `[simba]` $\rightarrow$ `/mnt/data/@simba`
+* **Windows Tuning & Compatibility:**
+  * Protocol: `SMB3` with multi-channel support (`server multi channel support = yes`).
+  * High-Throughput I/O: Asynchronous I/O (`aio read/write size = 1`), `use sendfile = yes`.
+  * NTFS / Windows Compatibility: `store dos attributes = yes`, `ea support = yes`, `vfs objects = streams_xattr acl_xattr`.
+  * Access Control: Restricted to user `bjm` with forced user/group ownership (`bjm:bjm`, masks `0664`/`0775`).
+
+---
+
+## 4. Virtualization Inventory
+
 
 | VMID | Type | Name | Status | Memory | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -58,7 +97,7 @@ To enable client devices on the local LAN (`192.168.68.0/24`) to route to the re
 
 ---
 
-## 4. Access Control & Security Boundaries
+## 5. Access Control & Security Boundaries
 
 Access to `rath15nas` is partitioned by role adhering to the Principle of Least Privilege (PoLP):
 
@@ -86,7 +125,7 @@ graph TD
     U2 --> S2
 ```
 
-### 4.1. Account Matrix
+### 5.1. Account Matrix
 
 * **Administrative Operator (`bjm`):**
   * Interactive administrative access.
@@ -100,7 +139,7 @@ graph TD
   * SSH Host Alias: `rath15nas-agent` (`HostName 192.168.68.169`, `User agy-auditor`).
   * Permissions: Strict read-only sudoers whitelist defined in `/etc/sudoers.d/agy-readonly`.
 
-### 4.2. Sudoers Whitelist (`/etc/sudoers.d/agy-readonly`)
+### 5.2. Sudoers Whitelist (`/etc/sudoers.d/agy-readonly`)
 
 ```sudoers
 # Read-only audit permissions for agy-auditor
@@ -114,11 +153,17 @@ agy-auditor ALL=(ALL) NOPASSWD: \
     /usr/bin/systemctl status *
 ```
 
-### 4.3. Privilege History & Posture Status
+### 5.3. Privilege History & Posture Status
 
 * **Current Status:** Purely read-only least privilege (`/etc/sudoers.d/agy-readonly`).
 * **Operational History:** Temporary execution privileges (`/etc/sudoers.d/agy-wireguard`) granted for initial interface synchronization and testing were revoked upon completion of host configuration. Mutating actions remain strictly forbidden.
 
-
-
 Any mutating operations (e.g., `iptables -F`, `systemctl restart`, `wg set`, `pct start/stop`) are strictly denied.
+
+---
+
+## 6. Agent & Tooling Environment
+
+* **Workstation AGY Agent:** Runs on the operator's Windows laptop, connecting remotely via `ssh rath15nas-agent` for telemetry and diagnostics.
+* **Host-Local AGY Agent:** Installed directly on `rath15nas` (`~/.local/bin/agy` v1.1.27) for local terminal-driven administration and maintenance tasks.
+* **Automation Scripts:** Maintained under [`scripts/`](scripts/) for turnkey, reproducible deployments ([`deploy-samba.ps1`](scripts/deploy-samba.ps1), [`setup-samba.sh`](scripts/setup-samba.sh)).
