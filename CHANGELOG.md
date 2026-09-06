@@ -44,9 +44,15 @@ Automated diagnostic workflows and pair-programming agents require inspection ac
    * Configured NAT masquerading on the WireGuard egress interface (`iptables -t nat -A POSTROUTING -o wg0 -j MASQUERADE`).
    * Configured stateful filter forwarding rules (`iptables -A FORWARD -d 192.168.6.0/24 -o wg0 -j ACCEPT` and `iptables -A FORWARD -i wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT`).
    * Defined static route on client workstation: `route -p add 192.168.6.0 mask 255.255.255.0 192.168.68.169`.
+3. **Phase 3 (Persistence Lock-In & Privilege Revocation):**
+   * Appended `PostUp` and `PostDown` hooks into `/etc/wireguard/wg0.conf` for automatic iptables lifecycle management.
+   * Persisted kernel forwarding across boots via `/etc/sysctl.d/99-wireguard-forwarding.conf`.
+   * Revoked temporary scoped permissions (`/etc/sudoers.d/agy-wireguard`), returning `agy-auditor` strictly to least-privilege read-only inspection (`/etc/sudoers.d/agy-readonly`).
+   * Tagged release: `v1.0-wireguard-routing`.
 
 #### Consequences
-* **Positive:** WireGuard automatically reconnects upon Proxmox boot.
+* **Positive:** Complete host-side WireGuard and routing lifecycle automatically persists across reboots.
 * **Positive:** Local LAN clients can transparently route traffic to `192.168.6.0/24` via Proxmox (`192.168.68.169`) without requiring changes to the remote peer's router or AllowedIPs list.
-* **Security:** Forwarding is strictly bounded to the destination subnet (`192.168.6.0/24`) and established return sessions.
+* **Security:** `agy-auditor` credentials and privileges are strictly locked down to read-only diagnostics; secrets remain isolated from automation.
+
 
