@@ -60,9 +60,9 @@ echo "[+] Entry conditions satisfied."
 # 2. Execution: Provision Storage, Stack & Configure Caddy
 # ------------------------------------------------------------------------------
 echo "[*] Ensuring Audiobooks and Podcasts directories exist on Btrfs storage..."
-pct exec "$VMID" -- mkdir -p /mnt/simba/Audiobooks /mnt/simba/Podcasts
-pct exec "$VMID" -- chmod -R 775 /mnt/simba/Audiobooks /mnt/simba/Podcasts
-pct exec "$VMID" -- chown -R 1000:1000 /mnt/simba/Audiobooks /mnt/simba/Podcasts 2>/dev/null || true
+pct exec "$VMID" -- mkdir -p /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts
+pct exec "$VMID" -- chmod -R 775 /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts
+pct exec "$VMID" -- chown -R 1000:1000 /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts 2>/dev/null || true
 
 echo "[*] Creating Audiobookshelf state directories on SSD..."
 pct exec "$VMID" -- mkdir -p /opt/stacks/audiobookshelf/config /opt/stacks/audiobookshelf/metadata
@@ -82,8 +82,8 @@ services:
       - AUDIOBOOKSHELF_GID=1000
       - TZ=Australia/Sydney
     volumes:
-      - /mnt/simba/Audiobooks:/audiobooks
-      - /mnt/simba/Podcasts:/podcasts
+      - /mnt/simba/Media/Audiobooks:/audiobooks
+      - /mnt/simba/Media/Podcasts:/podcasts
       - /opt/stacks/audiobookshelf/config:/config
       - /opt/stacks/audiobookshelf/metadata:/metadata
     networks:
@@ -151,5 +151,5 @@ echo "Access Details:"
 echo "  * HTTPS URL:      https://${AUDIOBOOK_DOMAIN}"
 echo "  * Direct Port:    http://192.168.68.175:${AUDIOBOOK_PORT}"
 echo "  * Mobile Apps:    Compatible with official iOS & Android Audiobookshelf apps"
-echo "  * Libraries:      /mnt/simba/Audiobooks and /mnt/simba/Podcasts"
+echo "  * Libraries:      /mnt/simba/Media/Audiobooks and /mnt/simba/Media/Podcasts"
 echo "======================================================================"
