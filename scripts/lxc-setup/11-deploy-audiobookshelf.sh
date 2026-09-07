@@ -60,9 +60,14 @@ echo "[+] Entry conditions satisfied."
 # 2. Execution: Provision Storage, Stack & Configure Caddy
 # ------------------------------------------------------------------------------
 echo "[*] Ensuring Audiobooks and Podcasts directories exist on Btrfs storage..."
-pct exec "$VMID" -- mkdir -p /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts
-pct exec "$VMID" -- chmod -R 775 /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts
-pct exec "$VMID" -- chown -R 1000:1000 /mnt/simba/Media/Audiobooks /mnt/simba/Media/Podcasts 2>/dev/null || true
+HOST_MEDIA_DIR="/mnt/data/@simba/Media"
+if [[ ! -d "$HOST_MEDIA_DIR" && -d "/mnt/simba/Media" ]]; then
+    HOST_MEDIA_DIR="/mnt/simba/Media"
+fi
+
+mkdir -p "$HOST_MEDIA_DIR/Audiobooks" "$HOST_MEDIA_DIR/Podcasts"
+chown -R 1000:1000 "$HOST_MEDIA_DIR/Audiobooks" "$HOST_MEDIA_DIR/Podcasts"
+chmod -R 777 "$HOST_MEDIA_DIR/Audiobooks" "$HOST_MEDIA_DIR/Podcasts"
 
 echo "[*] Creating Audiobookshelf state directories on SSD..."
 pct exec "$VMID" -- mkdir -p /opt/stacks/audiobookshelf/config /opt/stacks/audiobookshelf/metadata
