@@ -81,7 +81,7 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 * **Shares:**
   * `[simba]`: Path `/mnt/simba`, `valid users = bjm`, force create/directory mode `0660`/`0770`.
   * `[Shared-All-Family]`: Path `/mnt/simba/Shared-All-Family`, `valid users = bjm`, force create/directory mode `0664`/`0775` (synced via Syncthing).
-  * `[Media]`: Path `/mnt/simba/Media`, `valid users = bjm, htpc`, `force user = bjm`, `force group = bjm`, force create/directory mode `0664`/`0775` (dedicated for HTPC DVD ripping and direct file access).
+  * `[Media]`: Path `/mnt/simba/Media`, `valid users = bjm, htpc`, `force user = bjm`, `force group = bjm`, force create/directory mode `0664`/`0775` (contains Movies, Music, TV Shows, Audiobooks, Podcasts for HTPC ripping, network streaming, and Audiobookshelf management).
 * **Windows Tuning & Compatibility:**
   * Protocol: `SMB3` with multi-channel support (`server multi channel support = yes`).
   * High-Throughput I/O: Asynchronous I/O (`aio read/write size = 1`), `use sendfile = yes`.
@@ -120,6 +120,7 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Calibre-Web E-Book Library** (`/opt/stacks/calibre-web/compose.yaml`): Digital book management exposed on port `8083` and routed via Caddy at `https://books.dixon.home` and `https://books.192.168.68.175.nip.io`. Configured with linuxserver Calibre-Web mods for cover conversion, backed by `/mnt/simba/Books` with seeded `metadata.db`.
   * **FileBrowser Web File Manager** (`/opt/stacks/filebrowser/compose.yaml`): Lightweight web file explorer exposed on port `8082`, protected by Authelia SSO, and routed via Caddy at `https://files.dixon.home` and `https://files.192.168.68.175.nip.io`. Mounts the full Btrfs storage root (`/mnt/simba`) for browser-based file management across all shares.
   * **AdGuard Home Local DNS & Ad-Blocking** (`/opt/stacks/adguard/compose.yaml`): High-performance DNS server and network-wide privacy sinkhole listening on port `53` (TCP/UDP) and port `8085` (direct web). Routed via Caddy at `https://adguard.dixon.home` and `https://adguard.192.168.68.175.nip.io`. Provides internal DNS rewrites for `*.dixon.home` $\rightarrow$ `192.168.68.175` with zero external DNS leakage.
+  * **Audiobookshelf** (`/opt/stacks/audiobookshelf/compose.yaml`): Self-hosted audiobook and podcast server exposed on port `13378` and routed via Caddy at `https://audiobooks.dixon.home` and `https://audiobooks.192.168.68.175.nip.io`. Libraries mapped from `/mnt/simba/Media/Audiobooks` and `/mnt/simba/Media/Podcasts`. Uses native authentication at the proxy level to preserve seamless background sync for official iOS and Android mobile apps.
 * **Deployment Automation:**
   * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `13-configure-dixon-home.sh`).
 
