@@ -78,12 +78,15 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 
 * **Service Daemon:** `smbd.service` (managed via systemd, auto-enabled).
 * **Discovery Daemon:** `wsdd.service` (Web Services Dynamic Discovery for Windows Explorer).
-* **Share Name:** `[simba]` $\rightarrow$ `/mnt/data/@simba`
+* **Shares:**
+  * `[simba]`: Path `/mnt/simba`, `valid users = bjm`, force create/directory mode `0660`/`0770`.
+  * `[Shared-All-Family]`: Path `/mnt/simba/Shared-All-Family`, `valid users = bjm`, force create/directory mode `0664`/`0775` (synced via Syncthing).
+  * `[Media]`: Path `/mnt/simba/Media`, `valid users = bjm, htpc`, `force user = bjm`, `force group = bjm`, force create/directory mode `0664`/`0775` (dedicated for HTPC DVD ripping and direct file access).
 * **Windows Tuning & Compatibility:**
   * Protocol: `SMB3` with multi-channel support (`server multi channel support = yes`).
   * High-Throughput I/O: Asynchronous I/O (`aio read/write size = 1`), `use sendfile = yes`.
-  * NTFS / Windows Compatibility: `store dos attributes = yes`, `ea support = yes`, `vfs objects = streams_xattr acl_xattr`.
-  * Access Control: Restricted to user `bjm` with forced user/group ownership (`bjm:bjm`, masks `0664`/`0775`).
+  * NTFS / Windows Compatibility: `store dos attributes = yes`, `ea support = yes`, `vfs objects = btrfs acl_xattr`, `map acl inherit = yes`.
+  * Access Control: Multi-client isolation. Administrative access via `bjm`; HTPC optical ripping client restricted to `[Media]` via isolated service account `htpc` (UID 1003). Files written under `[Media]` are forced to `bjm:bjm` with world-readability (`0664`/`0775`) ensuring unprivileged container stacks (Jellyfin) and operator desktops have seamless access.
 
 ---
 
@@ -113,8 +116,10 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Dockge** (`/opt/stacks/dockge/compose.yaml`): Web Compose management UI exposed on port `5001`.
   * **Caddy Reverse Proxy** (`/opt/stacks/caddy/compose.yaml`): Edge HTTP/HTTPS reverse proxy on host ports `80` and `443`, joined to `gateway_net`.
   * **Authelia SSO & 2FA** (`/opt/stacks/authelia/compose.yaml`): Centralized authentication portal exposed on port `9091` and joined to `gateway_net`. Session cookies scoped to `192.168.68.175.nip.io`. User database uses Argon2id password hashing; storage backed by `/opt/stacks/authelia/data/db.sqlite3`.
+  * **Jellyfin Media Server** (`/opt/stacks/jellyfin/compose.yaml`): Media streaming server exposed on port `8096` and routed via Caddy at `https://jellyfin.192.168.68.175.nip.io`. Media library mapped read-only from `/mnt/simba/Media`.
+  * **Calibre-Web E-Book Library** (`/opt/stacks/calibre-web/compose.yaml`): Digital book management exposed on port `8083` and routed via Caddy at `https://books.192.168.68.175.nip.io`. Configured with linuxserver Calibre-Web mods for cover conversion, backed by `/mnt/simba/Books` with seeded `metadata.db`.
 * **Deployment Automation:**
-  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `06-deploy-authelia.sh`).
+  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `09-deploy-calibre-web.sh`).
 
 ---
 
@@ -160,6 +165,12 @@ graph TD
   * SSH Host Alias: `rath15nas-agent` (`HostName 192.168.68.169`, `User agy-auditor`).
   * Permissions: Strict read-only sudoers whitelist defined in `/etc/sudoers.d/agy-readonly`.
 
+* **HTPC File Sharing Service Account (`htpc`):**
+  * Dedicated service account for living-room optical media ripping (MakeMKV, Handbrake).
+  * System User: UID `1003`, primary group `users` (GID 100), shell `/usr/sbin/nologin` (no interactive console/SSH shell access).
+  * Scope: Restricted exclusively to `[Media]` share (`/mnt/simba/Media`).
+  * Forced Ownership: Samba writes executed under `bjm:bjm` identity (`force user = bjm`, `force group = bjm`) with `0664`/`0775` permissions.
+
 ### 5.2. Sudoers Whitelist (`/etc/sudoers.d/agy-readonly`)
 
 ```sudoers
@@ -187,4 +198,7 @@ Any mutating operations (e.g., `iptables -F`, `systemctl restart`, `wg set`, `pc
 
 * **Workstation AGY Agent:** Runs on the operator's Windows laptop, connecting remotely via `ssh rath15nas-agent` for telemetry and diagnostics.
 * **Host-Local AGY Agent:** Installed directly on `rath15nas` (`~/.local/bin/agy` v1.1.27) for local terminal-driven administration and maintenance tasks.
-* **Automation Scripts:** Maintained under [`scripts/`](scripts/) for turnkey, reproducible deployments ([`deploy-samba.ps1`](scripts/deploy-samba.ps1), [`setup-samba.sh`](scripts/setup-samba.sh)).
+* **Automation Scripts:** Maintained under [`scripts/`](scripts/) for turnkey, reproducible deployments:
+  * [`deploy-samba.ps1`](scripts/deploy-samba.ps1) & [`setup-samba.sh`](scripts/setup-samba.sh): Initial Btrfs storage pool Samba configuration.
+  * [`deploy-htpc-media.ps1`](scripts/deploy-htpc-media.ps1) & [`setup-htpc-media-share.sh`](scripts/setup-htpc-media-share.sh): Dedicated HTPC `[Media]` share and `htpc` service account setup.
+  * [`scripts/lxc-setup/`](scripts/lxc-setup/): Turnkey provisioning pipeline for LXC 920, Docker, Caddy, Authelia, Jellyfin, and Calibre-Web.
