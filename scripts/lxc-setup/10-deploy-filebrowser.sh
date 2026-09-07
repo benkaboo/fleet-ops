@@ -78,7 +78,7 @@ services:
     container_name: filebrowser
     restart: unless-stopped
     ports:
-      - \"${FILEBROWSER_PORT}:80\"
+      - "127.0.0.1:${FILEBROWSER_PORT}:80"
     volumes:
       - /mnt/simba:/srv
       - /opt/stacks/filebrowser/database:/database
@@ -94,6 +94,11 @@ networks:
     external: true
 COMPEOF"
 
+echo "[*] Initializing FileBrowser with Proxy Authentication (Remote-User)..."
+pct exec "$VMID" -- docker run --rm -v /opt/stacks/filebrowser/database:/database filebrowser/filebrowser config init -d /database/filebrowser.db 2>/dev/null || true
+pct exec "$VMID" -- docker run --rm -v /opt/stacks/filebrowser/database:/database filebrowser/filebrowser config set --auth.method=proxy --auth.header=Remote-User -d /database/filebrowser.db
+pct exec "$VMID" -- docker run --rm -v /opt/stacks/filebrowser/database:/database filebrowser/filebrowser users add bjm dummyPassword123 --perm.admin=true -d /database/filebrowser.db 2>/dev/null || true
+
 echo "[*] Starting FileBrowser container via Docker Compose..."
 pct exec "$VMID" -- docker compose -f /opt/stacks/filebrowser/compose.yaml up -d
 
@@ -104,7 +109,7 @@ if ! grep -q '${FILEBROWSER_DOMAIN}' \"\$CADDYFILE\"; then
     cat << 'CADEOF' >> \"\$CADDYFILE\"
 
 # FileBrowser Web File Manager (Protected by Authelia SSO)
-${FILEBROWSER_DOMAIN} {
+${FILEBROWSER_DOMAIN}, files.dixon.home {
     tls internal
     import authelia-auth
     reverse_proxy filebrowser:80
