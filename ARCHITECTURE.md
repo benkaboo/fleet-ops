@@ -137,11 +137,17 @@ graph TD
         K2[~/.ssh/id_ed25519_agy]
     end
 
-    subgraph Proxmox Host: rath15nas
+    subgraph Proxmox Host: rath15nas (192.168.68.169)
         U1[User: bjm]
         U2[User: agy-auditor]
         S1[Full Sudo / Sudoers]
-        S2["Sudoers Whitelist (/etc/sudoers.d/agy-readonly)"]
+        S2["Sudoers Read-Only (/etc/sudoers.d/agy-readonly)"]
+    end
+
+    subgraph Services Container: LXC 920 (192.168.68.175)
+        U3[User: agy-auditor]
+        S3["Sudoers Read-Only (/etc/sudoers.d/agy-readonly)"]
+        R0["Root SSH: REVOKED (No Authorized Keys)"]
     end
 
     A -- "ssh bjm@192.168.68.169" --> U1
@@ -151,21 +157,34 @@ graph TD
     A -- "ssh rath15nas-agent" --> U2
     K2 --> U2
     U2 --> S2
+
+    A -- "ssh services-agent" --> U3
+    K2 --> U3
+    U3 --> S3
 ```
 
 ### 5.1. Account Matrix
 
 * **Administrative Operator (`bjm`):**
-  * Interactive administrative access.
+  * Interactive administrative access on Proxmox hypervisor (`rath15nas`).
   * Sudo access with password authentication.
-  * Responsible for privileged modifications, updates, and service restarts.
+  * Sole administrator authorized to execute mutating container scripts via `sudo pct exec 920` or host bash.
 
-* **Audit & Automation Service Account (`agy-auditor`):**
-  * Non-interactive service account dedicated to automated diagnostics, auditing, and telemetry collection.
+* **Proxmox Audit & Automation Service Account (`agy-auditor` on `rath15nas`):**
+  * Non-interactive service account dedicated to automated hypervisor diagnostics, auditing, and network telemetry.
   * Password login: Disabled (`passwd -l`).
   * Authentication: Dedicated key pair (`~/.ssh/id_ed25519_agy`).
   * SSH Host Alias: `rath15nas-agent` (`HostName 192.168.68.169`, `User agy-auditor`).
   * Permissions: Strict read-only sudoers whitelist defined in `/etc/sudoers.d/agy-readonly`.
+
+* **Container Audit Service Account (`agy-auditor` on LXC 920 `services`):**
+  * Non-interactive service account dedicated to container and Docker stack inspection.
+  * Password login: Disabled (`passwd -l`).
+  * Authentication: Dedicated key pair (`~/.ssh/id_ed25519_agy`).
+  * SSH Host Alias: `services-agent` (`HostName 192.168.68.175`, `User agy-auditor`).
+  * Permissions: Strict read-only sudoers whitelist in `/etc/sudoers.d/agy-readonly` allowing `docker ps`, `docker inspect`, `docker logs`, `systemctl status`, `ss`, and reading Compose files.
+  * Root Account: `/root/.ssh/authorized_keys` revoked. Root login completely disabled.
+  * Mutating Actions: Strictly denied (no `docker run`, `docker exec`, `docker stop`, or filesystem mutations).
 
 * **HTPC File Sharing Service Account (`htpc`):**
   * Dedicated service account for living-room optical media ripping (MakeMKV, Handbrake).
@@ -173,10 +192,10 @@ graph TD
   * Scope: Restricted exclusively to `[Media]` share (`/mnt/simba/Media`).
   * Forced Ownership: Samba writes executed under `bjm:bjm` identity (`force user = bjm`, `force group = bjm`) with `0664`/`0775` permissions.
 
-### 5.2. Sudoers Whitelist (`/etc/sudoers.d/agy-readonly`)
+### 5.2. Sudoers Whitelists
 
+#### Proxmox Host (`/etc/sudoers.d/agy-readonly` on `rath15nas`):
 ```sudoers
-# Read-only audit permissions for agy-auditor
 agy-auditor ALL=(ALL) NOPASSWD: \
     /usr/bin/wg show*, \
     /usr/sbin/iptables -S*, \
@@ -187,12 +206,21 @@ agy-auditor ALL=(ALL) NOPASSWD: \
     /usr/bin/systemctl status *
 ```
 
+#### Services Container (`/etc/sudoers.d/agy-readonly` on LXC 920):
+```sudoers
+agy-auditor ALL=(ALL) NOPASSWD: \
+    /usr/bin/docker ps*, \
+    /usr/bin/docker inspect*, \
+    /usr/bin/docker logs*, \
+    /usr/bin/systemctl status*, \
+    /usr/bin/ss*, \
+    /usr/bin/cat /opt/stacks/*
+```
+
 ### 5.3. Privilege History & Posture Status
 
-* **Current Status:** Purely read-only least privilege (`/etc/sudoers.d/agy-readonly`).
-* **Operational History:** Temporary execution privileges (`/etc/sudoers.d/agy-wireguard`) granted for initial interface synchronization and testing were revoked upon completion of host configuration. Mutating actions remain strictly forbidden.
-
-Any mutating operations (e.g., `iptables -F`, `systemctl restart`, `wg set`, `pct start/stop`) are strictly denied.
+* **Current Status:** Purely read-only least privilege across both hypervisor (`rath15nas-agent`) and container (`services-agent`).
+* **Root SSH on Container:** Permanently revoked. Direct mutation by agents is cryptographically and administratively impossible. All state mutations must be provided as reviewed scripts executed by operator `bjm`.
 
 ---
 
