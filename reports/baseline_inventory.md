@@ -1,6 +1,6 @@
 # Workstation Host Baseline Inventory
 
-Generated: 2026-09-08 22:48:11
+Generated: 2026-09-09 08:31:41
 Host Machine: LENOVO16_LP | User: benma
 
 ## 1. System & Hardware Baseline
@@ -10,15 +10,14 @@ Host Machine: LENOVO16_LP | User: benma
 | **OS Version / Build** | 10.0.26200 (Build 26200) |
 | **Last Boot Time** | 08/29/2026 17:43:19 |
 | **Processor** | AMD Ryzen 5 7530U with Radeon Graphics          (6 Cores / 12 Threads) |
-| **Total RAM** | 14.83 GB (Free: 2.76 GB) |
+| **Total RAM** | 14.83 GB (Free: 7.2 GB) |
 | **Manufacturer / Model** | LENOVO - 21JT001GAU |
 
 ## 2. Storage Topology
 | Drive | Volume Name | File System | Total Size (GB) | Free Space (GB) | % Free |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| C: | Windows | NTFS | 474.72 | 204.61 | 43.1% |
+| C: | Windows | NTFS | 474.72 | 219.8 | 46.3% |
 | D: | 2_m2 | NTFS | 931.5 | 292.76 | 31.4% |
-| G: | Google Drive | FAT32 | 474.72 | 194.38 | 40.9% |
 
 ## 3. Developer Toolchains & CLI Utilities
 | Tool | Detected | Version / Path |
@@ -51,12 +50,12 @@ Host Machine: LENOVO16_LP | User: benma
 | Bluetooth Network Connection | 169.254.42.216 | Bluetooth Device (Personal Area Network) | Disconnected |
 | Local Area Connection* 1 | 169.254.27.125 | N/A | Unknown |
 | Ethernet | 169.254.128.3 | Realtek PCIe GbE Family Controller | Disconnected |
-| Wi-Fi | 192.168.68.163 | RZ616 Wi-Fi 6E 160MHz | Up |
+| Wi-Fi | 192.168.68.159 | RZ616 Wi-Fi 6E 160MHz | Up |
 
 ## 6. Known Cache & Temporary Space Usage
 | Cache Category | Path | Estimated Size (MB) | Status |
 | :--- | :--- | :--- | :--- |
-| User Temp (%TEMP%) | `C:\Users\benma\AppData\Local\Temp` | 169.47 MB | Present |
+| User Temp (%TEMP%) | `C:\Users\benma\AppData\Local\Temp` | 84.59 MB | Present |
 | npm Cache | `C:\Users\benma\AppData\Local\npm-cache` | 12 MB | Present |
 | pip Cache | `C:\Users\benma\AppData\Local\pip\cache` | 0 MB | Present |
 | Docker Desktop Data | `C:\Users\benma\AppData\Local\Docker` | 0 MB | Not Present |
