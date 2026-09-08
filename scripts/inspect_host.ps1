@@ -9,10 +9,20 @@
 
 [CmdletBinding()]
 param (
-    [string]$OutputPath = "$PSScriptRoot\..\reports\baseline_inventory.md"
+    [string]$OutputPath = ""
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+if (-not $OutputPath) {
+    $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+    $baseDir = if ($scriptDir) { Split-Path -Parent $scriptDir } else { (Get-Location).Path }
+    $OutputPath = Join-Path -Path $baseDir -ChildPath "reports\baseline_inventory.md"
+}
+
+function Format-Code([string]$val) {
+    return '`' + $val + '`'
+}
 
 # Ensure output directory exists
 $ReportDir = Split-Path -Path $OutputPath -Parent
@@ -31,7 +41,7 @@ $sb = [System.Text.StringBuilder]::new()
 Write-Host "Collecting OS and hardware specs..." -ForegroundColor Cyan
 $os = Get-CimInstance Win32_OperatingSystem
 $cs = Get-CimInstance Win32_ComputerSystem
-$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+$cpu = Get-CimInstance Win32_Processor | Select-Object -First 
 
 $totalRamGB = [math]::Round($cs.TotalPhysicalMemory / 1GB, 2)
 $freeRamGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
@@ -102,9 +112,9 @@ foreach ($t in $tools) {
             $vOutput = $found.Source
         }
         if (-not $vOutput) { $vOutput = $found.Source }
-        # Sanitize single line
         $vOutput = ($vOutput -split "`r?`n")[0]
-        [void]$sb.AppendLine("| $($t.Name) | Yes | `$vOutput` |")
+        $codeBlock = Format-Code $vOutput
+        [void]$sb.AppendLine("| $($t.Name) | Yes | $codeBlock |")
     } else {
         [void]$sb.AppendLine("| $($t.Name) | No | Not in PATH |")
     }
@@ -117,11 +127,11 @@ Write-Host "Checking WSL distributions..." -ForegroundColor Cyan
 $wslCmd = Get-Command "wsl" -ErrorAction SilentlyContinue
 if ($wslCmd) {
     $wslList = wsl.exe --list --verbose 2>&1
-    [void]$sb.AppendLine("```text")
+    [void]$sb.AppendLine('```text')
     foreach ($line in $wslList) {
         [void]$sb.AppendLine($line)
     }
-    [void]$sb.AppendLine("```")
+    [void]$sb.AppendLine('```')
 } else {
     [void]$sb.AppendLine("*WSL is not installed or not in PATH.*")
 }
@@ -158,11 +168,12 @@ $cachePaths = @(
 )
 
 foreach ($c in $cachePaths) {
+    $cCode = Format-Code $c.Path
     if (Test-Path $c.Path) {
         $sizeMB = [math]::Round(((Get-ChildItem -Path $c.Path -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB), 2)
-        [void]$sb.AppendLine("| $($c.Name) | `$($c.Path)` | $sizeMB MB | Present |")
+        [void]$sb.AppendLine("| $($c.Name) | $cCode | $sizeMB MB | Present |")
     } else {
-        [void]$sb.AppendLine("| $($c.Name) | `$($c.Path)` | 0 MB | Not Present |")
+        [void]$sb.AppendLine("| $($c.Name) | $cCode | 0 MB | Not Present |")
     }
 }
 [void]$sb.AppendLine("")
@@ -183,7 +194,8 @@ foreach ($rk in $runKeys) {
         $props = Get-ItemProperty -Path $rk.Path -ErrorAction SilentlyContinue
         foreach ($prop in $props.PSObject.Properties) {
             if ($prop.Name -notmatch "^PS.*") {
-                [void]$sb.AppendLine("| $($rk.Scope) | $($prop.Name) | `$($prop.Value)` |")
+                $cmdCode = Format-Code ([string]$prop.Value)
+                [void]$sb.AppendLine("| $($rk.Scope) | $($prop.Name) | $cmdCode |")
             }
         }
     }
