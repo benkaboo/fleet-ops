@@ -288,3 +288,4 @@ Automated diagnostic workflows and pair-programming agents require inspection ac
 * **Positive:** Seamless Windows desktop management: audiobooks and podcasts can be dropped directly into `M:\Audiobooks` and `M:\Podcasts`.
 * **Positive:** Official iOS and Android mobile apps can connect directly via `https://audiobooks.dixon.home` without proxy redirect issues.
 * **Positive:** High performance achieved by isolating high-write SQLite databases on SSD while keeping bulk audio on Btrfs RAID1.
+* **Operational:** Verified client playback, browser downloading, and offline downloading via third-party mobile clients (e.g. Absorb) over direct LAN.
