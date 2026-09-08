@@ -103,7 +103,8 @@ The system leverages a dual-NVMe configuration separating OS/runtimes from user 
 * **Version:** WSL 2 (Hyper-V lightweight VM architecture)
 * **Installed Distributions:**
   * `Ubuntu` (Default, Version 2, currently in **Stopped** state)
-* **Memory & Resource Behavior:** In a stopped state, WSL2 consumes 0 MB of host memory. When active, memory allocation is managed by the Hyper-V dynamic memory manager unless constrained by a custom `.wslconfig`.
+  * Disk footprint: `7.58 GB` (`ext4.vhdx` on OS Drive C:)
+* **Memory & Resource Behavior:** Constrained via `%USERPROFILE%\.wslconfig` (managed from [`configs/.wslconfig`](file:///C:/Users/benma/coding/agy_project/Projects/Workstation/configs/.wslconfig)). Capped at **2 GB RAM**, **2 vCPUs**, and configured with `autoMemoryReclaim=dropcache` to actively release guest memory pages back to Windows. Prevents the default 50% / 7.5 GB dynamic grab.
 
 ---
 
@@ -209,7 +210,7 @@ This workstation adheres to an explicit tradeoff discipline: no component, servi
 | :--- | :--- | :--- |
 | **Game Launchers (EA, GOG)** | **Disabled from Autostart (On-Demand only)** | Developer host priority: removes background network polling, update hooks, and idle RAM consumption. Games can be launched manually when needed. |
 | **Browser Pre-Launchers (Chrome, Edge, Copilot)** | **Disabled from Autostart (Full On-Demand)** | Releases ~2.2 GB - 6 GB idle RAM pressure across Chromium engines. Prevents hidden worker processes from lingering in RAM when windows are closed. Zero impact to sync, data, or Google Drive FS. Reversible via `scripts/restore_browser_autostart.ps1` or browser Settings. |
-| **WSL 2 Subsystem** | **Dormant / Low Priority (Offloaded to Codebox)** | Primary development container workloads are handled on the dedicated remote codebox. Local WSL is kept for occasional offline utility with strict resource bounding. |
+| **WSL 2 Subsystem** | **Guarded 2 GB Sandbox (Offloaded to Codebox)** | Primary development container workloads are handled on the dedicated remote codebox. Local WSL is kept for occasional offline utility with strict resource bounding (2 GB RAM, 2 CPUs, dropcache auto-reclaim via `.wslconfig`). |
 | **Lenovo Vantage & Power Tools** | **Retained in Autostart** | Deliberate choice to maintain battery charging threshold conservation (preserving physical battery longevity) and thermal profiles. |
 | **Sync Tools (OneDrive, Google Drive, Signal)** | **Retained in Autostart** | Essential real-time collaboration and secure communication pipelines. |
 

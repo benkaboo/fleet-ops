@@ -1,0 +1,16 @@
+# WSL2 Global Configuration
+# Optimization Profile: Minimal Local Footprint (Workloads offloaded to Codebox)
+# Documented in ARCHITECTURE.md
+
+[wsl2]
+# Restrict WSL memory allocation to 2 GB maximum (prevents default 50% / 7.5 GB allocation)
+memory=2GB
+
+# Limit virtual processor allocation to 2 cores
+processors=2
+
+# Cap swap file size at 1 GB
+swap=1GB
+
+# Automatically release cached guest memory back to the Windows host
+autoMemoryReclaim=dropcache
