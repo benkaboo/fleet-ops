@@ -1,0 +1,5 @@
+{
+    "GoogleChromeAutoLaunch_4D84F28729775318C627E672514BD80D":  "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --no-startup-window /prefetch:5",
+    "MicrosoftCopilotAutoLaunch_E4CE1E454A58C9D2EC7FDA74FB4FEC1D":  "\"C:\\Program Files (x86)\\Microsoft\\Copilot\\Application\\mscopilot.exe\" --no-startup-window --win-session-start",
+    "MicrosoftEdgeAutoLaunch_321C9B9C46B6500E0A5A39232496A26D":  "\"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --no-startup-window --win-session-start"
+}

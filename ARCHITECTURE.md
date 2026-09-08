@@ -177,8 +177,10 @@ graph LR
 * **Transitioned to On-Demand (Disabled from Boot):**
   * `EA Desktop` (`EALauncher.exe -silent`): Removed from `HKCU Run` on 2026-09-08. Launchable on-demand.
   * `GOG Galaxy` (`GalaxyClient.exe`): Removed from `HKCU Run` on 2026-09-08. Launchable on-demand.
+  * `Google Chrome AutoLaunch` (`chrome.exe --no-startup-window /prefetch:5`): Removed from `HKCU Run` on 2026-09-08.
+  * `Microsoft Edge AutoLaunch` (`msedge.exe --no-startup-window`): Removed from `HKCU Run` on 2026-09-08.
+  * `Microsoft Copilot AutoLaunch` (`mscopilot.exe --no-startup-window`): Removed from `HKCU Run` on 2026-09-08.
 * **Remaining Optimization Candidates:**
-  * Chrome, Edge, and Copilot background startup windows (Pre-fetch memory without active browser usage).
   * Duplicate Logitech Download Assistant entries.
 
 ---
@@ -206,6 +208,7 @@ This workstation adheres to an explicit tradeoff discipline: no component, servi
 | Component / Subsystem | Tradeoff Decision | Justification / Operational Scope |
 | :--- | :--- | :--- |
 | **Game Launchers (EA, GOG)** | **Disabled from Autostart (On-Demand only)** | Developer host priority: removes background network polling, update hooks, and idle RAM consumption. Games can be launched manually when needed. |
+| **Browser Pre-Launchers (Chrome, Edge, Copilot)** | **Disabled from Autostart (Full On-Demand)** | Releases ~2.2 GB - 6 GB idle RAM pressure across Chromium engines. Prevents hidden worker processes from lingering in RAM when windows are closed. Zero impact to sync, data, or Google Drive FS. Reversible via `scripts/restore_browser_autostart.ps1` or browser Settings. |
 | **WSL 2 Subsystem** | **Dormant / Low Priority (Offloaded to Codebox)** | Primary development container workloads are handled on the dedicated remote codebox. Local WSL is kept for occasional offline utility with strict resource bounding. |
 | **Lenovo Vantage & Power Tools** | **Retained in Autostart** | Deliberate choice to maintain battery charging threshold conservation (preserving physical battery longevity) and thermal profiles. |
 | **Sync Tools (OneDrive, Google Drive, Signal)** | **Retained in Autostart** | Essential real-time collaboration and secure communication pipelines. |
