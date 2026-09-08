@@ -125,11 +125,12 @@ The machine operates in a dual-tier networking topology: physical Wi-Fi for upli
 ## 6. Developer Toolchains & Environment
 
 ### 6.1 Core Runtimes & Languages
-* **Git:** `2.55.0.windows.3` (Located in `C:\Program Files\Git\cmd\git.exe`)
-* **Python:** `Python 3.14.6` (User/System path)
-* **Node.js:** `v24.16.0` (Node runtime in `C:\Program Files\nodejs\node.exe`)
-* **npm:** Node Package Manager (Global scripts in `C:\Program Files\nodejs\npm.cmd`)
-* **Antigravity CLI (`agy`):** `1.1.27` (Located in `%USERPROFILE%\.gemini\antigravity-cli\bin\agy.cmd`)
+* **Git:** `2.55.0.windows.3` (System PATH: `C:\Program Files\Git\cmd\git.exe`)
+* **Python:** Unified on `Python 3.14.6` (System PATH: `C:\Python314\python.exe`; legacy User PATH entries to 3.12 pruned on 2026-09-08)
+* **Node.js:** `v24.16.0` (System PATH: `C:\Program Files\nodejs\node.exe`; invalid file path in User PATH pruned on 2026-09-08)
+* **npm:** Node Package Manager (System PATH: `C:\Program Files\nodejs\npm.cmd`; User packages: `%APPDATA%\npm`)
+* **Antigravity CLI (`agy`):** `1.1.27` (User PATH: `%LOCALAPPDATA%\agy\bin\agy.exe`)
+* **rclone:** `v1.73.4` (User PATH: `C:\rclone\rclone-v1.73.4-windows-amd64`)
 
 ### 6.2 Package Managers
 * **Windows Package Manager (`winget`):** `v1.29.290` (Standard Windows package management)
@@ -211,6 +212,7 @@ This workstation adheres to an explicit tradeoff discipline: no component, servi
 | **Game Launchers (EA, GOG)** | **Disabled from Autostart (On-Demand only)** | Developer host priority: removes background network polling, update hooks, and idle RAM consumption. Games can be launched manually when needed. |
 | **Browser Pre-Launchers (Chrome, Edge, Copilot)** | **Disabled from Autostart (Full On-Demand)** | Releases ~2.2 GB - 6 GB idle RAM pressure across Chromium engines. Prevents hidden worker processes from lingering in RAM when windows are closed. Zero impact to sync, data, or Google Drive FS. Reversible via `scripts/restore_browser_autostart.ps1` or browser Settings. |
 | **WSL 2 Subsystem** | **Guarded 2 GB Sandbox (Offloaded to Codebox)** | Primary development container workloads are handled on the dedicated remote codebox. Local WSL is kept for occasional offline utility with strict resource bounding (2 GB RAM, 2 CPUs, dropcache auto-reclaim via `.wslconfig`). |
+| **Python Toolchain (3.14 vs 3.12)** | **Unified on Python 3.14 (System PATH)** | Eliminates runtime version ambiguity where `python` and `python3` resolved to conflicting paths. Pruned User PATH pointers to 3.12 while preserving global python launcher. Reversible via `scripts/restore_user_path.ps1`. |
 | **Lenovo Vantage & Power Tools** | **Retained in Autostart** | Deliberate choice to maintain battery charging threshold conservation (preserving physical battery longevity) and thermal profiles. |
 | **Sync Tools (OneDrive, Google Drive, Signal)** | **Retained in Autostart** | Essential real-time collaboration and secure communication pipelines. |
 
