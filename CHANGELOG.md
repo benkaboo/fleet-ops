@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [2026-09-08]
 
+### Maintenance: Ephemeral Cache Cleanup (Tier 2)
+
+* **npm Cache:** Executed `npm cache clean --force`; purged stale global package tarballs, reclaiming **410.22 MB** (footprint reduced to 12 MB).
+* **pip Cache:** Executed `python -m pip cache purge`; purged leftover wheel build caches, reclaiming **30.20 MB** (footprint reduced to 0 MB).
+* **User Temp:** Purged stale, unlocked temporary files from `%TEMP%`, reclaiming **15.15 MB**.
+* **Automation:** Scripted into version-controlled utility `scripts/cleanup_caches.ps1`.
+* **Total Ephemeral Reclamation:** **455.57 MB**.
+* **Post-Optimization Verification:** Regenerated `reports/baseline_inventory.md`; confirmed disk free space on C: increased to 204.61 GB and available RAM rose to 2.76 GB.
+
 ### ADR: Host Python Simplification & Devbox Offloading Strategy
 
 #### Context
