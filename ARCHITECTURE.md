@@ -172,12 +172,14 @@ graph LR
     end
 ```
 
-### Autostart Assessment
-* **High-Value / Daily Use:** KeePass 2, Windows Security Health, OneDrive, Google Drive File Stream, Signal.
-* **Low-Value / Latency Overhead (Candidates for Disabling):**
-  * EA Desktop & GOG Galaxy (Can be launched on demand instead of at boot).
+### Autostart Assessment & Active Status
+* **Active Daily Use:** KeePass 2, Windows Security Health, OneDrive, Google Drive File Stream, Signal Desktop, Lenovo Vantage services.
+* **Transitioned to On-Demand (Disabled from Boot):**
+  * `EA Desktop` (`EALauncher.exe -silent`): Removed from `HKCU Run` on 2026-09-08. Launchable on-demand.
+  * `GOG Galaxy` (`GalaxyClient.exe`): Removed from `HKCU Run` on 2026-09-08. Launchable on-demand.
+* **Remaining Optimization Candidates:**
   * Chrome, Edge, and Copilot background startup windows (Pre-fetch memory without active browser usage).
-  * Duplicate Logitech Download Assistant entries (`LogiLDA.dll` + `logi_download_assistant.exe`).
+  * Duplicate Logitech Download Assistant entries.
 
 ---
 
@@ -197,6 +199,19 @@ As mandated by [`AGENTS.md`](file:///C:/Users/benma/coding/agy_project/Projects/
 
 ---
 
-## 9. Architectural Decisions & Maintenance History
+## 9. Architectural Tradeoffs & Deliberate Decisions
+
+This workstation adheres to an explicit tradeoff discipline: no component, service, or background task should run without a deliberate purpose, and intentional performance overheads are formally acknowledged.
+
+| Component / Subsystem | Tradeoff Decision | Justification / Operational Scope |
+| :--- | :--- | :--- |
+| **Game Launchers (EA, GOG)** | **Disabled from Autostart (On-Demand only)** | Developer host priority: removes background network polling, update hooks, and idle RAM consumption. Games can be launched manually when needed. |
+| **WSL 2 Subsystem** | **Dormant / Low Priority (Offloaded to Codebox)** | Primary development container workloads are handled on the dedicated remote codebox. Local WSL is kept for occasional offline utility with strict resource bounding. |
+| **Lenovo Vantage & Power Tools** | **Retained in Autostart** | Deliberate choice to maintain battery charging threshold conservation (preserving physical battery longevity) and thermal profiles. |
+| **Sync Tools (OneDrive, Google Drive, Signal)** | **Retained in Autostart** | Essential real-time collaboration and secure communication pipelines. |
+
+---
+
+## 10. Architectural Decisions & Maintenance History
 
 Major architectural decisions and maintenance interventions are tracked under Architectural Decision Records (ADR) in [`CHANGELOG.md`](file:///C:/Users/benma/coding/agy_project/Projects/Workstation/CHANGELOG.md).
