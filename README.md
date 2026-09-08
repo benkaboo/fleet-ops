@@ -4,7 +4,7 @@ This repository manages the system architecture baseline, diagnostic tooling, an
 
 ## Directory Structure
 * `AGENTS.md` - Workspace-specific safety boundaries and execution tiers.
-* `ARCHITECTURE.md` - (Generated in Phase 2) Comprehensive architecture and system specifications.
+* `ARCHITECTURE.md` - Authoritative workstation architecture and system specifications.
 * `CHANGELOG.md` - Architectural Decision Records (ADRs) and maintenance history.
 * `scripts/` - Non-invasive inspection and diagnostic automation scripts.
 * `reports/` - Timestamped audit summaries and baseline inventory captures.

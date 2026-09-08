@@ -41,7 +41,7 @@ $sb = [System.Text.StringBuilder]::new()
 Write-Host "Collecting OS and hardware specs..." -ForegroundColor Cyan
 $os = Get-CimInstance Win32_OperatingSystem
 $cs = Get-CimInstance Win32_ComputerSystem
-$cpu = Get-CimInstance Win32_Processor | Select-Object -First 
+$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 
 $totalRamGB = [math]::Round($cs.TotalPhysicalMemory / 1GB, 2)
 $freeRamGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
@@ -129,7 +129,10 @@ if ($wslCmd) {
     $wslList = wsl.exe --list --verbose 2>&1
     [void]$sb.AppendLine('```text')
     foreach ($line in $wslList) {
-        [void]$sb.AppendLine($line)
+        $cleanLine = "$line" -replace "`0", ""
+        if ($cleanLine.Trim().Length -gt 0) {
+            [void]$sb.AppendLine($cleanLine)
+        }
     }
     [void]$sb.AppendLine('```')
 } else {
