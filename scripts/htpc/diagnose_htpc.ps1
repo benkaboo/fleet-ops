@@ -1,16 +1,16 @@
 ﻿<#
 .SYNOPSIS
-    Diagnoses Remote Desktop (RDP), OpenSSH, User Accounts, and Network Firewall on rath15-htpc.
+    Diagnoses OpenSSH Server readiness and network accessibility on rath15-htpc.
 .DESCRIPTION
     Run this script locally on rath15-htpc in PowerShell.
     It checks:
-      1. Windows OS edition (Home vs Pro).
-      2. Remote Desktop (RDP) service and registry settings.
-      3. Windows Hello Passwordless lockdown policy.
-      4. Local user accounts and group memberships (Administrators, Remote Desktop Users).
-      5. OpenSSH Server status.
-      6. Network profile (Private vs Public) and Firewall rules.
-    Outputs the findings to console and saves a report to htpc_diagnostics_report.txt.
+      1. OpenSSH Server capability installation status.
+      2. Status and startup configuration of the 'sshd' service.
+      3. Network connection category (Private vs Public).
+      4. Inbound Windows Firewall rules for Port 22.
+      5. Existence and permissions (ACL) of administrators_authorized_keys and user authorized_keys.
+      6. Local user accounts and active IP addresses.
+    Outputs findings to console and saves report to htpc_diagnostics_report.txt.
 #>
 
 [CmdletBinding()]
@@ -26,124 +26,86 @@ function Log-Output {
 }
 
 Log-Output "========================================================" "Cyan"
-Log-Output "   rath15-htpc Remote Login & Access Diagnostic Report   " "Cyan"
+Log-Output "     rath15-htpc OpenSSH Server Readiness Diagnostic     " "Cyan"
 Log-Output "   Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  " "Cyan"
 Log-Output "========================================================" "Cyan"
 
-# 1. Operating System Edition
+# 1. Operating System & Local User
 $os = Get-CimInstance Win32_OperatingSystem
-Log-Output "`n[1] OPERATING SYSTEM" "Yellow"
-Log-Output "  Caption: $($os.Caption)"
-Log-Output "  Version: $($os.Version) (Build $($os.BuildNumber))"
+Log-Output "`n[1] SYSTEM & USER IDENTITY" "Yellow"
+Log-Output "  OS: $($os.Caption) (Build $($os.BuildNumber))"
+Log-Output "  Host: $env:COMPUTERNAME | Current User: $env:USERNAME"
 
-$isHome = $os.Caption -like "*Home*"
-if ($isHome) {
-    Log-Output "  [!] WARNING: Windows Home edition detected!" "Red"
-    Log-Output "      Windows Home does NOT natively support incoming Remote Desktop (RDP) connections." "Red"
-    Log-Output "      OpenSSH or third-party remote tools (VNC, Moonlight, RustDesk) must be used instead." "Yellow"
-} else {
-    Log-Output "  [OK] Windows Pro/Enterprise edition detected. RDP host capability is supported." "Green"
-}
-
-# 2. Remote Desktop (RDP) Configuration
-Log-Output "`n[2] REMOTE DESKTOP (RDP) STATUS" "Yellow"
-$rdpSvc = Get-Service TermService -ErrorAction SilentlyContinue
-if ($rdpSvc) {
-    Log-Output "  Service (TermService): $($rdpSvc.Status) (Startup: $($rdpSvc.StartType))"
-} else {
-    Log-Output "  Service (TermService): Not Installed" "Red"
-}
-
-$fDeny = (Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -ErrorAction SilentlyContinue).fDenyTSConnections
-if ($fDeny -eq 0) {
-    Log-Output "  RDP Connections (fDenyTSConnections): 0 (Enabled / Allowed)" "Green"
-} elseif ($fDeny -eq 1) {
-    Log-Output "  RDP Connections (fDenyTSConnections): 1 (DISABLED / BLOCKED)" "Red"
-} else {
-    Log-Output "  RDP Connections: Unknown / Not configured" "Yellow"
-}
-
-$nla = (Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -ErrorAction SilentlyContinue).UserAuthentication
-if ($nla -eq 1) {
-    Log-Output "  Network Level Authentication (NLA): Enabled (Requires valid credentials before GUI)" "Green"
-} elseif ($nla -eq 0) {
-    Log-Output "  Network Level Authentication (NLA): Disabled" "Yellow"
-}
-
-# 3. Windows Hello Passwordless Policy
-Log-Output "`n[3] WINDOWS HELLO PASSWORDLESS POLICY" "Yellow"
-$pwless = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Passwordless\Device" -Name "DevicePasswordLessBuildVersion" -ErrorAction SilentlyContinue).DevicePasswordLessBuildVersion
-if ($pwless -eq 2) {
-    Log-Output "  [!] Passwordless Lockdown: ACTIVE (DevicePasswordLessBuildVersion = 2)" "Red"
-    Log-Output "      Windows disables remote password logins when Passwordless Hello is enforced." "Red"
-    Log-Output "      Fix: Disable 'Only allow Windows Hello sign-in for Microsoft accounts' in Settings." "Yellow"
-} elseif ($pwless -eq 0) {
-    Log-Output "  [OK] Passwordless Lockdown: Inactive (Standard password authentication allowed)" "Green"
-} else {
-    Log-Output "  Passwordless setting: Not set or default ($pwless)" "Cyan"
-}
-
-# 4. OpenSSH Server Status
-Log-Output "`n[4] OPENSSH SERVER STATUS" "Yellow"
+# 2. OpenSSH Windows Capability
+Log-Output "`n[2] OPENSSH SERVER CAPABILITY" "Yellow"
 $sshCap = Get-WindowsCapability -Online -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "OpenSSH.Server*" }
 if ($sshCap) {
-    Log-Output "  Capability: $($sshCap.Name) - State: $($sshCap.State)"
+    $capColor = if ($sshCap.State -eq "Installed") { "Green" } else { "Red" }
+    Log-Output "  Capability: $($sshCap.Name) - State: $($sshCap.State)" $capColor
 } else {
-    Log-Output "  Capability: OpenSSH.Server not found" "Yellow"
+    Log-Output "  [!] Capability: OpenSSH.Server not detected" "Red"
 }
 
-$sshSvc = Get-Service sshd -ErrorAction SilentlyContinue
-if ($sshSvc) {
-    Log-Output "  Service (sshd): $($sshSvc.Status) (Startup: $($sshSvc.StartType))" "Cyan"
+# 3. sshd Service Status
+Log-Output "`n[3] SSH SERVICE STATUS" "Yellow"
+$sshd = Get-Service sshd -ErrorAction SilentlyContinue
+if ($sshd) {
+    $svcColor = if ($sshd.Status -eq "Running") { "Green" } else { "Yellow" }
+    Log-Output "  Service (sshd): $($sshd.Status) (Startup: $($sshd.StartType))" $svcColor
 } else {
-    Log-Output "  Service (sshd): Not installed" "Yellow"
+    Log-Output "  Service (sshd): Not installed" "Red"
 }
 
-# 5. User Accounts & Group Memberships
-Log-Output "`n[5] USER ACCOUNTS & PRIVILEGES" "Yellow"
-try {
-    $users = Get-LocalUser -ErrorAction SilentlyContinue
-    foreach ($u in $users) {
-        $status = if ($u.Enabled) { "Enabled" } else { "Disabled" }
-        $pwReq = if ($u.PasswordRequired) { "PasswordRequired" } else { "NO Password Required" }
-        Log-Output "  User: $($u.Name) | Status: $status | $pwReq | LastLogon: $($u.LastLogon)"
-    }
-
-    Log-Output "`n  Group: Administrators" "Cyan"
-    $admins = Get-LocalGroupMember -Group "Administrators" -ErrorAction SilentlyContinue
-    foreach ($m in $admins) {
-        Log-Output "    - $($m.Name) ($($m.ObjectClass))"
-    }
-
-    Log-Output "`n  Group: Remote Desktop Users" "Cyan"
-    $rdpUsers = Get-LocalGroupMember -Group "Remote Desktop Users" -ErrorAction SilentlyContinue
-    if ($rdpUsers) {
-        foreach ($m in $rdpUsers) {
-            Log-Output "    - $($m.Name) ($($m.ObjectClass))"
-        }
-    } else {
-        Log-Output "    (No users explicitly in Remote Desktop Users; Administrators are permitted by default)" "Gray"
-    }
-} catch {
-    Log-Output "  [!] Could not query local users: $($_.Exception.Message)" "Yellow"
+$agent = Get-Service ssh-agent -ErrorAction SilentlyContinue
+if ($agent) {
+    Log-Output "  Service (ssh-agent): $($agent.Status) (Startup: $($agent.StartType))" "Cyan"
 }
 
-# 6. Network Configuration & Firewall Profiles
-Log-Output "`n[6] NETWORK CONFIGURATION & FIREWALL" "Yellow"
-$netProfiles = Get-NetConnectionProfile -ErrorAction SilentlyContinue
-foreach ($np in $netProfiles) {
-    $pColor = if ($np.NetworkCategory -eq "Private") { "Green" } else { "Red" }
-    Log-Output "  Interface: $($np.InterfaceAlias) | Category: $($np.NetworkCategory) | IPv4: $($np.IPv4Address)" $pColor
-    if ($np.NetworkCategory -ne "Private") {
-        Log-Output "    [!] Warning: Network category is not 'Private'. Windows Firewall blocks RDP on Public networks!" "Red"
+# 4. Network Category & Firewall
+Log-Output "`n[4] NETWORK & FIREWALL" "Yellow"
+$profiles = Get-NetConnectionProfile -ErrorAction SilentlyContinue
+foreach ($p in $profiles) {
+    $pColor = if ($p.NetworkCategory -eq "Private") { "Green" } else { "Red" }
+    Log-Output "  Interface: $($p.InterfaceAlias) | Category: $($p.NetworkCategory) | IPv4: $($p.IPv4Address)" $pColor
+    if ($p.NetworkCategory -ne "Private") {
+        Log-Output "    [!] Warning: Windows Firewall drops incoming connections on Public networks." "Red"
     }
 }
-
-$rdpRules = Get-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -eq "True" -and $_.Direction -eq "Inbound" }
-Log-Output "`n  Active Inbound Remote Desktop Firewall Rules: $($rdpRules.Count)" "Cyan"
 
 $sshRules = Get-NetFirewallRule -Name "*ssh*" -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -eq "True" -and $_.Direction -eq "Inbound" }
 Log-Output "  Active Inbound SSH Firewall Rules: $($sshRules.Count)" "Cyan"
+foreach ($r in $sshRules) {
+    $portFilter = Get-NetFirewallPortFilter -AssociatedNetFirewallRule $r -ErrorAction SilentlyContinue
+    $addrFilter = Get-NetFirewallAddressFilter -AssociatedNetFirewallRule $r -ErrorAction SilentlyContinue
+    Log-Output "    - Rule: $($r.DisplayName) | Port: $($portFilter.LocalPort) | Remote: $($addrFilter.RemoteAddress)"
+}
+
+# 5. Authorized Keys & Permissions
+Log-Output "`n[5] AUTHORIZED KEYS INTEGRITY" "Yellow"
+$adminKey = "$env:ProgramData\ssh\administrators_authorized_keys"
+if (Test-Path $adminKey) {
+    $keys = Get-Content $adminKey
+    Log-Output "  [OK] administrators_authorized_keys exists (Contains $($keys.Count) keys)" "Green"
+    $acl = Get-Acl -Path $adminKey
+    Log-Output "       Access Rules: $($acl.Access.Count) entry/entries"
+} else {
+    Log-Output "  [!] administrators_authorized_keys NOT found" "Yellow"
+}
+
+$userKey = "$env:USERPROFILE\.ssh\authorized_keys"
+if (Test-Path $userKey) {
+    $uKeys = Get-Content $userKey
+    Log-Output "  [OK] User authorized_keys exists (Contains $($uKeys.Count) keys)" "Green"
+} else {
+    Log-Output "  [!] User authorized_keys NOT found" "Yellow"
+}
+
+# 6. Active IP Addresses
+Log-Output "`n[6] ACTIVE IP ADDRESSES" "Yellow"
+$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch "vEthernet|Loopback" }
+foreach ($ip in $ips) {
+    Log-Output "  - $($ip.IPAddress) ($($ip.InterfaceAlias))" "Cyan"
+}
 
 Log-Output "`n========================================================" "Cyan"
 Log-Output "Diagnostic complete. Report saved to:" "Cyan"
