@@ -1,4 +1,4 @@
-﻿# rath15-htpc System Architecture Specification
+# rath15-htpc System Architecture Specification
 
 ## 1. Node Overview & System Purpose
 
@@ -86,13 +86,17 @@ The storage architecture is divided between high-speed local SATA SSD storage fo
 ### 4.2. Local Logical Partitions
 | Drive | Root | Total (GB) | Used (GB) | Free (GB) | % Free | Role / Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **C:** | `C:\` | 930.6 GB | 465.4 GB | **465.2 GB** | **50.0%** | Windows 11 OS, Applications, User Profiles |
+| **C:** | `C:\` | 930.6 GB | 454.3 GB | **476.3 GB** | **51.2%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
 | **D:** | `D:\` | 7.9 GB | 7.9 GB | **0.0 GB** | **0.0%** | Recovery / Reserved Image Partition |
-| **F:** | `F:\` | 1,401.8 GB | 1,309.8 GB | **92.0 GB** | **6.6%** | Mechanical Disk Partition 1 (Local Media / Games) |
-| **G:** | `G:\` | 957.0 GB | 879.1 GB | **77.9 GB** | **8.1%** | Mechanical Disk Partition 2 (Downloads / Cache) |
-| **H:** | `H:\` | 1,367.2 GB | 1,283.1 GB | **84.1 GB** | **6.2%** | Mechanical Disk Partition 3 (Archive Media) |
+| **F:** | `F:\` | 1,401.8 GB | 1,295.9 GB | **105.9 GB** | **7.6%** | Mechanical Disk Partition 1 (Local Media / Games; +13.9 GB freed via Recycle Bin) |
+| **G:** | `G:\` | 957.0 GB | 879.1 GB | **77.9 GB** | **8.1%** | Mechanical Disk Partition 2 (Downloads / Secondary Steam Library) |
+| **H:** | `H:\` | 1,367.2 GB | 1,283.1 GB | **84.1 GB** | **6.2%** | Mechanical Disk Partition 3 (Archive Media / Modern Warfare) |
 
-### 4.3. Network SMB Mounts
+### 4.3. Virtual Memory & Paging Topology
+* **Dedicated SSD Paging:** Windows Virtual Memory (`PagingFiles`) is consolidated strictly onto high-speed Crucial MX500 SATA SSD storage (`C:\pagefile.sys 8000 16000`).
+* **Mechanical Partition Paging Elimination:** Redundant 8 GB pagefiles previously bound to `F:\`, `G:\`, and `H:\` (and legacy missing `E:\`) have been decommissioned to stop 5,400 RPM mechanical head thrashing and recover 24 GB across the WD Red drive following next restart.
+
+### 4.4. Network SMB Mounts
 | Drive Letter | Remote UNC Path | Target Host | Purpose |
 | :--- | :--- | :--- | :--- |
 | **M:** | `\\192.168.68.169\Media` | `RATH15NAS` | Primary Centralized Media Pool (Simba) |
@@ -117,21 +121,26 @@ The storage architecture is divided between high-speed local SATA SSD storage fo
 
 ## 6. Autostart Applications & Background Services
 
-### 6.1. Media, Gaming & Remote Streaming Processes
+### 6.1. Active Autostart Applications
+* **Discord (`Discord.exe`):** Explicitly retained in autostart for both user profiles (`benka_000` and `dylan_93nze6m`) to support Ben's son chatting with friends while gaming without manual launch friction.
 * **Virtual Desktop Service (`VirtualDesktop.Service`):** Background streamer for Oculus / Quest VR head-mounted displays.
-* **Steam Client (`steam.exe -silent`):** Gaming library and Steam Link remote play backend.
-* **Epic Games Launcher (`EpicGamesLauncher.exe -silent`):** Auxiliary gaming library.
 * **Xbox Wireless Controller (`XboxStat.exe`):** Microsoft Xbox 360/One wireless controller driver daemon.
 * **Logitech SetPoint (`SetPoint.exe`):** Living room keyboard / trackpad peripheral driver.
+* **Microsoft OneDrive (`OneDrive.exe /background`):** User profile cloud storage synchronization.
+* **NordVPN (`NordVPN.exe`):** Network privacy and tunnel manager.
+* **Acronis True Image Scheduler (`schedhlp.exe`):** System image backup scheduler.
+* **Greenshot (`Greenshot.exe`):** Screen capture utility.
 
-### 6.2. Background Cloud Sync & Tools
-* **Microsoft OneDrive (`OneDrive.exe /background`)**
-* **Apple iCloud Services (`iCloudServices.exe`)**
-* **Discord (`Discord.exe`)**
-* **Xtreme Download Manager (`XDM` / `javaw.exe`)**
-* **NordVPN (`NordVPN.exe`)**
-* **Acronis True Image Scheduler (`schedhlp.exe`)**
-* **Greenshot (`Greenshot.exe`)**
+### 6.2. On-Demand Software Stack (Pruned from Boot)
+To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread contention, the following applications were transitioned from headless autostart to on-demand execution:
+* **Steam Client (`steam.exe -silent`):** Run on-demand when playing Steam games or launching via living room UI.
+* **Epic Games Launcher (`EpicGamesLauncher.exe -silent`):** Run on-demand for Epic titles.
+* **Microsoft Edge (`msedge.exe`):** Startup Boost and pre-launch autostart disabled; browser runs exclusively when opened.
+* **Apple iCloud Services (`iCloudServices.exe`):** Run on-demand.
+* **Xtreme Download Manager (`XDM`):** Removed from autostart; scheduled for uninstallation per user confirmation.
+
+### 6.3. Decommissioned / Disabled Services
+* **ASUS Com Service (`asComSvc`):** Set to `Disabled`. Orphaned ASUS utility service (`atkexComSvc.exe`) that caused recurring 45-second boot timeouts and System Event 7000/7009 errors on the host's MSI MAG B550 TOMAHAWK motherboard.
 
 ---
 

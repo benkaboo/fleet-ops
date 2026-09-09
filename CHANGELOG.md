@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable architectural decisions, maintenance operations, and system baselines for `rath15-htpc` are documented in this file.
 
@@ -51,3 +51,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 * **Positive:** High-security, cryptographically authenticated remote administration established. Zero password transmission over the network.
 * **Operational:** Remote maintenance, diagnostics, and updates can now be run completely in the background without affecting the living room TV screen or media playback.
 * **Security:** Attack surface minimized by binding port 22 strictly to the local home subnet.
+
+### ADR: Host Optimization, Virtual Memory Topology, and Autostart Streamlining
+
+#### Context
+1. **The Problem / Requirement:** A non-invasive Tier 1 remote audit of `rath15-htpc` revealed:
+   * Elevated System event log errors (60 errors over 7 days), including recurring 45-second service start timeouts from `asComSvc` and external CD-ROM bad block warnings during MakeMKV processing.
+   * Severe memory saturation (61% RAM used at idle) caused by unoptimized autostart entries across active and disconnected user sessions (27 Microsoft Edge Chromium processes consuming 1.8 GB, 10 Steam CEF helper processes consuming 1.2 GB, Epic Games Launcher, and XDM pre-allocating a 1 GB Java heap).
+   * Low free space warnings on mechanical disk partitions (`F:`, `G:`, and `H:` down to 6–8% free space), exacerbated by 24 GB of slow mechanical swap files (`pagefile.sys`) on spinning disk platters causing drive head thrashing.
+2. **Constraints & Trade-offs:**
+   * **Discord Autostart Retention:** Discord must remain in autostart for both user profiles (`benka_000` and `dylan_93nze6m`) so Ben's son can chat with friends while gaming without manual launch friction.
+   * **Protected Zones:** Gaming libraries, media configurations, and display drivers must remain intact.
+   * **Reversibility:** All removed autostart keys and pagefile configurations must be backed up prior to mutation.
+
+#### Action
+1. **Implementation Steps:**
+   * Executed Tier 2 ephemeral cleanup on `F:\$RECYCLE.BIN`, immediately reclaiming 13.9 GB of disk space (raising `F:\` free space from 92.0 GB to 105.9 GB).
+   * Backed up `PagingFiles` registry multi-string setting to `C:\ProgramData\htpc_maintenance_backups\PagingFiles_backup.txt`.
+   * Reconfigured Windows Virtual Memory (`HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`) to reside exclusively on the high-speed Crucial MX500 SATA SSD (`c:\pagefile.sys 8000 16000`), decommissioning 8 GB mechanical pagefiles on `F:`, `G:`, `H:`, and non-existent `E:`.
+   * Set orphaned ASUS Com Service (`asComSvc`) to `Disabled` and stopped the service, resolving hardware incompatibility on the host's MSI MAG B550 TOMAHAWK motherboard and eliminating 45-second boot delays and System Event 7000/7009 errors.
+   * Backed up HKCU Run keys to `C:\ProgramData\htpc_maintenance_backups\HKCU_Run_backup.txt`.
+   * Removed headless autostart entries for `MicrosoftEdgeAutoLaunch`, `Steam`, `EpicGamesLauncher`, `XDM`, and `iCloudServices` in `benka_000`, and `EpicGamesLauncher` and `MicrosoftEdgeAutoLaunch` in `dylan_93nze6m`, transitioning these tools to on-demand execution.
+   * Explicitly verified and preserved `Discord` in autostart across both user profiles (`benka_000` and `dylan_93nze6m`).
+2. **Key Parameters:**
+   * SSD Dedicated Paging: `c:\pagefile.sys 8000 16000` (8 GB initial / 16 GB max)
+   * Target Service Disabled: `asComSvc` (`atkexComSvc.exe`)
+   * Retained Autostart: `Discord.exe` (both profiles), `OneDrive.exe`, `NordVPN.exe`, `VirtualDesktop.Service`
+   * Disk Space Reclaimed: 13.9 GB immediate (`F:\`), with +24 GB (+8 GB per partition) pending release post-reboot.
+3. **Verification & Testing:**
+   * Verified `PagingFiles` value contains only `c:\pagefile.sys 8000 16000`.
+   * Confirmed `(Get-Service asComSvc).StartType` is `Disabled` and status is `Stopped`.
+   * Confirmed registry property removals and verified `Discord` remains present in both `benka_000` and `dylan_93nze6m` user hives.
+   * Measured free storage on `F:\` at 105.9 GB (up from 92.0 GB).
+
+#### Consequences
+* **Positive:** Eliminated 45-second boot freeze; stopped mechanical disk head thrashing caused by swap paging; recovered 13.9 GB immediately on `F:\`; unlocked projected 3.0–4.5 GB memory recovery on next user logon; removed recurring System Event errors 7000 and 7009.
+* **Operational:** Steam, Epic Games, and Edge now launch on-demand; Ben's son maintains uninterrupted Discord startup; locked `pagefile.sys` files on `F:`, `G:`, and `H:` will be cleared post-reboot.
+* **Security & Stability:** Reduced background attack surface and idle resource draw while preserving family gaming workflows.
