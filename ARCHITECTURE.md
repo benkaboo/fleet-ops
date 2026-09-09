@@ -89,8 +89,8 @@ The storage architecture is divided between high-speed local SATA SSD storage fo
 | **C:** | `C:\` | 930.6 GB | 454.3 GB | **476.3 GB** | **51.2%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
 | **D:** | `D:\` | 7.9 GB | 7.9 GB | **0.0 GB** | **0.0%** | Recovery / Reserved Image Partition |
 | **F:** | `F:\` | 1,401.8 GB | 1,295.9 GB | **105.9 GB** | **7.6%** | Mechanical Disk Partition 1 (Local Media / Games; +13.9 GB freed via Recycle Bin) |
-| **G:** | `G:\` | 957.0 GB | 879.1 GB | **77.9 GB** | **8.1%** | Mechanical Disk Partition 2 (Downloads / Secondary Steam Library) |
-| **H:** | `H:\` | 1,367.2 GB | 1,283.1 GB | **84.1 GB** | **6.2%** | Mechanical Disk Partition 3 (Archive Media / Modern Warfare) |
+| **G:** | `G:\` | 957.0 GB | 875.1 GB | **81.9 GB** | **8.6%** | Mechanical Disk Partition 2 (Downloads / Secondary Steam Library; +4.0 GB freed) |
+| **H:** | `H:\` | 1,367.2 GB | 1,274.4 GB | **92.8 GB** | **6.8%** | Mechanical Disk Partition 3 (Archive Media / Modern Warfare; +8.7 GB freed) |
 
 ### 4.3. Virtual Memory & Paging Topology
 * **Dedicated SSD Paging:** Windows Virtual Memory (`PagingFiles`) is consolidated strictly onto high-speed Crucial MX500 SATA SSD storage (`C:\pagefile.sys 8000 16000`).
