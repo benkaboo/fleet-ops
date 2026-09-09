@@ -215,6 +215,7 @@ This workstation adheres to an explicit tradeoff discipline: no component, servi
 | **Host Python Role** | **Single Runtime (3.14 Only) for Host Automation** | Full software engineering and complex packages are offloaded to devbox. The local host workstation maintains a single, clean Python 3.14 installation strictly for system utilities and host automation. Python 3.12 uninstalled; `python3` command shim active. |
 | **Lenovo Vantage & Power Tools** | **Retained in Autostart** | Deliberate choice to maintain battery charging threshold conservation (preserving physical battery longevity) and thermal profiles. |
 | **Sync Tools (OneDrive, Google Drive, Signal)** | **Retained in Autostart** | Essential real-time collaboration and secure communication pipelines. |
+| **Microsoft GameInput** | **Standalone Redistributable Uninstalled (Native Windows 11 Service Only)** | Eliminates redundant `GameInputRedistService` and repetitive MSI reconfiguration loops (Event 1035) during sleep/idle. All game controller APIs continue to operate natively through Windows 11 `System32\GameInputSvc.exe`. |
 
 ---
 
