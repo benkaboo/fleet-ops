@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Installs, configures, and hardens OpenSSH Server on rath15-htpc.
 .DESCRIPTION
@@ -44,15 +44,26 @@ foreach ($p in $profiles) {
 }
 
 # 2. Provision Windows OpenSSH Server Capability
-Write-Host "`n[2/6] Checking OpenSSH Server Windows Capability..." -ForegroundColor Cyan
-$sshCap = Get-WindowsCapability -Online | Where-Object { $_.Name -like "OpenSSH.Server*" }
+Write-Host "`n[2/6] Checking OpenSSH Server..." -ForegroundColor Cyan
 
-if ($sshCap.State -ne "Installed") {
-    Write-Host "  -> Installing OpenSSH.Server capability (may take 1-2 minutes)..." -ForegroundColor Yellow
-    Add-WindowsCapability -Online -Name $sshCap.Name | Out-Null
-    Write-Host "  -> OpenSSH Server capability installed." -ForegroundColor Green
+$sshdBinary = "$env:SystemRoot\System32\OpenSSH\sshd.exe"
+if (Test-Path $sshdBinary) {
+    Write-Host "  -> sshd.exe is already present at $sshdBinary." -ForegroundColor Green
 } else {
-    Write-Host "  -> OpenSSH Server capability is already installed." -ForegroundColor Green
+    Write-Host "  -> Checking targeted capability..." -ForegroundColor Cyan
+    $capName = "OpenSSH.Server~~~~0.0.1.0"
+    $cap = Get-WindowsCapability -Online -Name $capName -ErrorAction SilentlyContinue
+
+    if ($cap -and $cap.State -eq "Installed") {
+        Write-Host "  -> OpenSSH.Server capability is already installed." -ForegroundColor Green
+    } else {
+        Write-Host "  -> Installing OpenSSH.Server via DISM (live progress below)..." -ForegroundColor Yellow
+        & dism.exe /Online /Add-Capability /CapabilityName:$capName
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  [!] DISM returned code $LASTEXITCODE. Retrying via Add-WindowsCapability..." -ForegroundColor Yellow
+            Add-WindowsCapability -Online -Name $capName
+        }
+    }
 }
 
 # 3. Configure and Start Services
