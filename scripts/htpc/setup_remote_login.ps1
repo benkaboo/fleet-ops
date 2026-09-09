@@ -43,26 +43,63 @@ foreach ($p in $profiles) {
     }
 }
 
-# 2. Provision Windows OpenSSH Server Capability
-Write-Host "`n[2/6] Checking OpenSSH Server..." -ForegroundColor Cyan
+# 2. Provision Windows OpenSSH Server Capability / Offline Binaries
+Write-Host "`n[2/6] Provisioning OpenSSH Server..." -ForegroundColor Cyan
 
-$sshdBinary = "$env:SystemRoot\System32\OpenSSH\sshd.exe"
-if (Test-Path $sshdBinary) {
-    Write-Host "  -> sshd.exe is already present at $sshdBinary." -ForegroundColor Green
-} else {
-    Write-Host "  -> Checking targeted capability..." -ForegroundColor Cyan
-    $capName = "OpenSSH.Server~~~~0.0.1.0"
-    $cap = Get-WindowsCapability -Online -Name $capName -ErrorAction SilentlyContinue
+$sshdInstalled = $false
 
-    if ($cap -and $cap.State -eq "Installed") {
-        Write-Host "  -> OpenSSH.Server capability is already installed." -ForegroundColor Green
-    } else {
-        Write-Host "  -> Installing OpenSSH.Server via DISM (live progress below)..." -ForegroundColor Yellow
-        & dism.exe /Online /Add-Capability /CapabilityName:$capName
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  [!] DISM returned code $LASTEXITCODE. Retrying via Add-WindowsCapability..." -ForegroundColor Yellow
-            Add-WindowsCapability -Online -Name $capName
+# A. Fast Check: Is sshd service or binary already registered?
+$existingSvc = Get-Service sshd -ErrorAction SilentlyContinue
+if ($existingSvc) {
+    Write-Host "  -> sshd service is already registered ($($existingSvc.Status))." -ForegroundColor Green
+    $sshdInstalled = $true
+} elseif (Test-Path "$env:SystemRoot\System32\OpenSSH\sshd.exe") {
+    Write-Host "  -> Native sshd.exe binary detected in System32." -ForegroundColor Green
+    $sshdInstalled = $true
+}
+
+if (-not $sshdInstalled) {
+    # B. Offline Package Check (S:\Scripts\htpc\OpenSSH-Win64.zip)
+    $zipPath = Join-Path $PSScriptRoot "OpenSSH-Win64.zip"
+    if (Test-Path $zipPath) {
+        Write-Host "  -> Found offline OpenSSH-Win64.zip! Extracting to C:\Program Files\OpenSSH (bypassing Windows Update/DISM)..." -ForegroundColor Green
+        $targetDir = "C:\Program Files\OpenSSH"
+        if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
         }
+        
+        # Extract archive
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $tempExtract = Join-Path $env:TEMP "OpenSSH_Extract"
+        if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force -ErrorAction SilentlyContinue }
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tempExtract)
+        
+        $innerDir = Join-Path $tempExtract "OpenSSH-Win64"
+        if (Test-Path $innerDir) {
+            Copy-Item -Path "$innerDir\*" -Destination $targetDir -Recurse -Force
+        } else {
+            Copy-Item -Path "$tempExtract\*" -Destination $targetDir -Recurse -Force
+        }
+        Remove-Item -Path $tempExtract -Recurse -Force -ErrorAction SilentlyContinue
+        
+        # Add to System PATH if not present
+        $sysPath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        if ($sysPath -notlike "*$targetDir*") {
+            [System.Environment]::SetEnvironmentVariable("Path", "$targetDir;$sysPath", "Machine")
+            Write-Host "  -> Added $targetDir to System PATH." -ForegroundColor Green
+        }
+        
+        # Execute official installer script
+        $installer = Join-Path $targetDir "install-sshd.ps1"
+        if (Test-Path $installer) {
+            Write-Host "  -> Running official install-sshd.ps1..." -ForegroundColor Cyan
+            & powershell.exe -ExecutionPolicy Bypass -File $installer
+        }
+        $sshdInstalled = $true
+    } else {
+        # C. Fallback to DISM
+        Write-Host "  -> Installing via DISM..." -ForegroundColor Yellow
+        & dism.exe /Online /Add-Capability /CapabilityName:OpenSSH.Server~~~~0.0.1.0
     }
 }
 
