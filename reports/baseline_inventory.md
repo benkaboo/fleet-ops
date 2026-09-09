@@ -1,6 +1,6 @@
 ﻿# HTPC Host Baseline Inventory (RATH15-HTPC)
 
-Generated: 2026-09-09 17:49:02
+Generated: 2026-09-10 07:39:39
 Target Node: RATH15-HTPC | OS: Microsoft Windows 11 Pro
 
 ## 1. System & Hardware Baseline
@@ -9,10 +9,10 @@ Target Node: RATH15-HTPC | OS: Microsoft Windows 11 Pro
 | **Host Name** | RATH15-HTPC |
 | **OS Caption** | Microsoft Windows 11 Pro (64-bit) |
 | **OS Version / Build** | 10.0.26200 (Build 26200) |
-| **Last Boot Time** | 2026-09-09 10:49:01 (Uptime: 0.29 days) |
+| **Last Boot Time** | 2026-09-10 01:00:38 (Uptime: 0.28 days) |
 | **Motherboard** | Micro-Star International Co., Ltd. MAG B550 TOMAHAWK (MS-7C91) |
 | **Processor** | AMD Ryzen 5 5600X 6-Core Processor              (6 Cores / 12 Threads) |
-| **Total RAM** | 15.93 GB (Free: 4.32 GB, Used: 11.61 GB) |
+| **Total RAM** | 15.93 GB (Free: 12 GB, Used: 3.93 GB) |
 
 ## 2. Graphics & Audio Subsystem
 ### Video Controllers (GPUs)
@@ -42,11 +42,11 @@ Target Node: RATH15-HTPC | OS: Microsoft Windows 11 Pro
 ### Local Volumes & Mounted Drives
 | Drive | Root | Total (GB) | Used (GB) | Free (GB) | % Free |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| C | C:\ | 930.6 | 465.4 | 465.2 | 50% |
+| C | C:\ | 930.6 | 455.3 | 475.2 | 51.1% |
 | D | D:\ | 7.9 | 7.9 | 0 | 0% |
-| F | F:\ | 1401.8 | 1309.8 | 92 | 6.6% |
-| G | G:\ | 957 | 879.1 | 77.9 | 8.1% |
-| H | H:\ | 1367.2 | 1283.1 | 84.1 | 6.2% |
+| F | F:\ | 1401.8 | 1288.1 | 113.7 | 8.1% |
+| G | G:\ | 957 | 867.3 | 89.7 | 9.4% |
+| H | H:\ | 1367.2 | 1266.6 | 100.6 | 7.4% |
 
 ### Network SMB Mappings
 | Local | Remote Target | Status |
@@ -72,19 +72,14 @@ Target Node: RATH15-HTPC | OS: Microsoft Windows 11 Pro
 ### Running Media / Remote Processes
 | Process Name | PID | RAM (MB) |
 | :--- | :--- | :--- |
-| VirtualDesktop.Service | 5244 | 44.3 |
+| VirtualDesktop.Service | 5108 | 50.1 |
 
 ### Autostart Entries (HKCU - User Scope)
 | Name | Command |
 | :--- | :--- |
 | OneDrive | `"C:\Users\benka_000\AppData\Local\Microsoft\OneDrive\OneDrive.exe" /background` |
-| iCloudServices | `"C:\Program Files (x86)\Common Files\Apple\Internet Services\iCloudServices.exe"` |
-| EpicGamesLauncher | `"F:\UE\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe" -silent -launchcontext=boot` |
-| XDM | `"C:\Program Files (x86)\XDM\java-runtime\bin\javaw.exe" -Xmx1024m -jar "C:\Program Files (x86)\XDM\xdman.jar" -m` |
 | NordVPN | `"C:\Program Files\NordVPN\NordVPN.exe"` |
 | Discord | `C:\Users\benka_000\AppData\Local\Discord\Update.exe --processStart Discord.exe` |
-| Steam | `"C:\Program Files (x86)\Steam\steam.exe" -silent` |
-| MicrosoftEdgeAutoLaunch_594733247D47D557C7AB2F395A5A4B22 | `"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --no-startup-window --win-session-start` |
 
 ### Autostart Entries (HKLM - Machine Scope)
 | Name | Command |
@@ -98,14 +93,14 @@ Target Node: RATH15-HTPC | OS: Microsoft Windows 11 Pro
 ## 6. Remote Access Services
 | Service | Status | Startup Type | Protocol / Port |
 | :--- | :--- | :--- | :--- |
-| OpenSSH (sshd) | 4 | 3 | Port 22 (TCP) |
+| OpenSSH (sshd) | 4 | 2 | Port 22 (TCP) |
 | Remote Desktop (TermService) | 4 | 3 | Port 3389 (TCP) |
 
 ## 7. System Health & Error Telemetry (Last 7 Days)
 | Metric | Count | Status |
 | :--- | :--- | :--- |
-| **System Event Errors** | 60 | Elevated |
-| **Application Event Errors** | 25 | Normal |
+| **System Event Errors** | 64 | Elevated |
+| **Application Event Errors** | 37 | Normal |
 | **Kernel-Power 41 (Unexpected Shutdowns)** | 0 | Clean |
 | **WHEA Hardware Errors** | 0 | Clean (0) |
 
