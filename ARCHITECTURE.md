@@ -45,7 +45,7 @@ graph TD
 | **Operating System** | Microsoft Windows 11 Pro (64-bit) | Build `10.0.26200` |
 | **Processor** | AMD Ryzen 5 5600X 6-Core Processor | 6 Cores / 12 Threads (Zen 3) |
 | **Motherboard** | MSI MAG B550 TOMAHAWK (MS-7C91) | AMD B550 Chipset, Dual PCIe / Dual M.2 |
-| **System Memory** | 15.93 GB Total Physical RAM | 4.32 GB Free / 11.61 GB Active Working Set |
+| **System Memory** | 15.93 GB Total Physical RAM | **12.71 GB Free / 3.22 GB Active Working Set** (79.8% Available) |
 | **System Uptime** | Healthy / Stable | 0 Kernel-Power 41 events; 0 WHEA hardware faults |
 
 ---
@@ -86,15 +86,15 @@ The storage architecture is divided between high-speed local SATA SSD storage fo
 ### 4.2. Local Logical Partitions
 | Drive | Root | Total (GB) | Used (GB) | Free (GB) | % Free | Role / Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **C:** | `C:\` | 930.6 GB | 454.3 GB | **476.3 GB** | **51.2%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
+| **C:** | `C:\` | 930.6 GB | 454.6 GB | **475.9 GB** | **51.1%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
 | **D:** | `D:\` | 7.9 GB | 7.9 GB | **0.0 GB** | **0.0%** | Recovery / Reserved Image Partition |
-| **F:** | `F:\` | 1,401.8 GB | 1,295.9 GB | **105.9 GB** | **7.6%** | Mechanical Disk Partition 1 (Local Media / Games; +13.9 GB freed via Recycle Bin) |
-| **G:** | `G:\` | 957.0 GB | 875.1 GB | **81.9 GB** | **8.6%** | Mechanical Disk Partition 2 (Downloads / Secondary Steam Library; +4.0 GB freed) |
-| **H:** | `H:\` | 1,367.2 GB | 1,274.4 GB | **92.8 GB** | **6.8%** | Mechanical Disk Partition 3 (Archive Media / Modern Warfare; +8.7 GB freed) |
+| **F:** | `F:\` | 1,401.8 GB | 1,288.1 GB | **113.7 GB** | **8.1%** | Mechanical Partition 1 (Local Media/Games; +21.7 GB gained via Recycle Bin & pagefile purge) |
+| **G:** | `G:\` | 957.0 GB | 867.3 GB | **89.7 GB** | **9.4%** | Mechanical Partition 2 (Downloads/Steam; +11.8 GB gained via installer purge & pagefile purge) |
+| **H:** | `H:\` | 1,367.2 GB | 1,266.6 GB | **100.6 GB** | **7.4%** | Mechanical Partition 3 (Archive Media; +16.5 GB gained via game zip purge & pagefile purge) |
 
 ### 4.3. Virtual Memory & Paging Topology
 * **Dedicated SSD Paging:** Windows Virtual Memory (`PagingFiles`) is consolidated strictly onto high-speed Crucial MX500 SATA SSD storage (`C:\pagefile.sys 8000 16000`).
-* **Mechanical Partition Paging Elimination:** Redundant 8 GB pagefiles previously bound to `F:\`, `G:\`, and `H:\` (and legacy missing `E:\`) have been decommissioned to stop 5,400 RPM mechanical head thrashing and recover 24 GB across the WD Red drive following next restart.
+* **Mechanical Partition Paging Eliminated:** Mechanical swap files on `F:\`, `G:\`, and `H:\` were decommissioned and purged upon restart, permanently stopping 5,400 RPM mechanical head thrashing and reclaiming 24 GB (+50.0 GB total mechanical storage recovered).
 
 ### 4.4. Network SMB Mounts
 | Drive Letter | Remote UNC Path | Target Host | Purpose |
@@ -149,6 +149,7 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 ### 7.1. OpenSSH Server Configuration (Primary Management Channel)
 * **Daemon:** Windows OpenSSH Server (`sshd`) running on port `22` (TCP).
 * **Startup Type:** `Automatic` (Managed by Windows Service Control Manager).
+* **Boot Resilience:** Hardened with elevated SYSTEM scheduled task `EnsureSshdBoot` executing at startup (`AtStartup`) to guarantee service recovery, automatic startup type enforcement, and backup registry restoration across Windows updates.
 * **Firewall Scoping:** Inbound TCP Port 22 is strictly restricted to `LocalSubnet` (`192.168.68.0/24`) on the `Private` network profile. WAN/Internet access is blocked.
 * **Authentication Method:** Asymmetric Ed25519 Public Key Authentication only.
   * Ben's Workstation Key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIZ770T1Rk509xop3YRfue50lvOY9fPd0w8jckwNWYi3`
