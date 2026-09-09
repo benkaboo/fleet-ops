@@ -75,10 +75,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
    * Explicitly verified and preserved `Discord` in autostart across both user profiles (`benka_000` and `dylan_93nze6m`).
    * Uninstalled Xtreme Download Manager 2020 via MSI product code `{694CC410-5DD4-40F4-B92C-914FE66313FD}` (`/qn /norestart`), completely removing the application directory and bundled Java runtime.
    * Purged redundant root installer archives `H:\Mortal Kombat 9.zip` (8.83 GB) and `G:\Battlefront_2_Remaster_Installer_1.1.zip` (4.07 GB) after confirming uncompressed directories were intact, reclaiming 12.9 GB across `G:\` and `H:\`.
+   * Uninstalled legacy Oracle VM VirtualBox 5.2.12 via MSI product code `{128AD467-F107-4FED-A283-F355E74DE103}` (`/qn /norestart`), unbinding kernel drivers `VBoxNetLwf.sys` (NDIS bridge), `VBoxUSBMon.sys`, and `VBoxDrv.sys`, eliminating the 8 recurring System Event 12 network driver errors.
 2. **Key Parameters:**
    * SSD Dedicated Paging: `c:\pagefile.sys 8000 16000` (8 GB initial / 16 GB max)
    * Target Service Disabled: `asComSvc` (`atkexComSvc.exe`)
-   * Package Uninstalled: `Xtreme Download Manager 2020` (`{694CC410-5DD4-40F4-B92C-914FE66313FD}`)
+   * Packages Uninstalled: `Xtreme Download Manager 2020` (`{694CC410-5DD4-40F4-B92C-914FE66313FD}`), `Oracle VM VirtualBox 5.2.12` (`{128AD467-F107-4FED-A283-F355E74DE103}`)
    * Retained Autostart: `Discord.exe` (both profiles), `OneDrive.exe`, `NordVPN.exe`, `VirtualDesktop.Service`
    * Disk Space Reclaimed: 26.6 GB immediate across mechanical partitions (`F:\` +13.9 GB, `G:\` +4.0 GB, `H:\` +8.7 GB), with +24 GB (+8 GB per partition) pending release post-reboot.
 3. **Verification & Testing:**
@@ -87,8 +88,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
    * Confirmed registry property removals and verified `Discord` remains present in both `benka_000` and `dylan_93nze6m` user hives.
    * Confirmed XDM uninstallation by querying the uninstall registry and testing path `C:\Program Files (x86)\XDM` (returned False).
    * Verified deletion of root zip files and measured updated free storage: `F:\` at 105.9 GB (7.6%), `G:\` at 81.9 GB (8.6%), and `H:\` at 92.8 GB (6.8%).
+   * Confirmed VirtualBox uninstallation: 0 VBox kernel drivers/services active, directory `C:\Program Files\Oracle\VirtualBox` removed, and physical network adapters verified healthy and operational.
 
 #### Consequences
-* **Positive:** Eliminated 45-second boot freeze; stopped mechanical disk head thrashing caused by swap paging; recovered 13.9 GB immediately on `F:\`; unlocked projected 3.0–4.5 GB memory recovery on next user logon; removed recurring System Event errors 7000 and 7009.
+* **Positive:** Eliminated 45-second boot freeze; stopped mechanical disk head thrashing caused by swap paging; recovered 26.6 GB immediately across mechanical drives; unlocked projected 3.0–4.5 GB memory recovery on next user logon; removed recurring System Event errors 7000, 7009, and 12 (`VBoxNetLwf`).
 * **Operational:** Steam, Epic Games, and Edge now launch on-demand; Ben's son maintains uninterrupted Discord startup; locked `pagefile.sys` files on `F:`, `G:`, and `H:` will be cleared post-reboot.
-* **Security & Stability:** Reduced background attack surface and idle resource draw while preserving family gaming workflows.
+* **Security & Stability:** Cleaned up 8-year-old abandoned kernel drivers from the networking stack and reduced attack surface while preserving family gaming workflows.
