@@ -137,7 +137,7 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 * **Epic Games Launcher (`EpicGamesLauncher.exe -silent`):** Run on-demand for Epic titles.
 * **Microsoft Edge (`msedge.exe`):** Startup Boost and pre-launch autostart disabled; browser runs exclusively when opened.
 * **Apple iCloud Services (`iCloudServices.exe`):** Run on-demand.
-* **Xtreme Download Manager (`XDM`):** Removed from autostart; scheduled for uninstallation per user confirmation.
+* **Xtreme Download Manager (`XDM`):** Fully uninstalled via MSI uninstaller (`{694CC410-5DD4-40F4-B92C-914FE66313FD}`); bundled Java runtime and application files removed.
 
 ### 6.3. Decommissioned / Disabled Services
 * **ASUS Com Service (`asComSvc`):** Set to `Disabled`. Orphaned ASUS utility service (`atkexComSvc.exe`) that caused recurring 45-second boot timeouts and System Event 7000/7009 errors on the host's MSI MAG B550 TOMAHAWK motherboard.

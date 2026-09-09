@@ -73,15 +73,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
    * Backed up HKCU Run keys to `C:\ProgramData\htpc_maintenance_backups\HKCU_Run_backup.txt`.
    * Removed headless autostart entries for `MicrosoftEdgeAutoLaunch`, `Steam`, `EpicGamesLauncher`, `XDM`, and `iCloudServices` in `benka_000`, and `EpicGamesLauncher` and `MicrosoftEdgeAutoLaunch` in `dylan_93nze6m`, transitioning these tools to on-demand execution.
    * Explicitly verified and preserved `Discord` in autostart across both user profiles (`benka_000` and `dylan_93nze6m`).
+   * Uninstalled Xtreme Download Manager 2020 via MSI product code `{694CC410-5DD4-40F4-B92C-914FE66313FD}` (`/qn /norestart`), completely removing the application directory and bundled Java runtime.
 2. **Key Parameters:**
    * SSD Dedicated Paging: `c:\pagefile.sys 8000 16000` (8 GB initial / 16 GB max)
    * Target Service Disabled: `asComSvc` (`atkexComSvc.exe`)
+   * Package Uninstalled: `Xtreme Download Manager 2020` (`{694CC410-5DD4-40F4-B92C-914FE66313FD}`)
    * Retained Autostart: `Discord.exe` (both profiles), `OneDrive.exe`, `NordVPN.exe`, `VirtualDesktop.Service`
    * Disk Space Reclaimed: 13.9 GB immediate (`F:\`), with +24 GB (+8 GB per partition) pending release post-reboot.
 3. **Verification & Testing:**
    * Verified `PagingFiles` value contains only `c:\pagefile.sys 8000 16000`.
    * Confirmed `(Get-Service asComSvc).StartType` is `Disabled` and status is `Stopped`.
    * Confirmed registry property removals and verified `Discord` remains present in both `benka_000` and `dylan_93nze6m` user hives.
+   * Confirmed XDM uninstallation by querying the uninstall registry and testing path `C:\Program Files (x86)\XDM` (returned False).
    * Measured free storage on `F:\` at 105.9 GB (up from 92.0 GB).
 
 #### Consequences
