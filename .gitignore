@@ -1,0 +1,14 @@
+﻿# Windows & system artifacts
+*.tmp
+*.log
+Thumbs.db
+Desktop.ini
+
+# PowerShell & caches
+*.ps1xml
+
+# Secrets & sensitive keys
+*.env
+*.key
+*.pem
+*.pfx
