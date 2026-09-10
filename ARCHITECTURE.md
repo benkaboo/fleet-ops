@@ -174,3 +174,27 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 * **Kernel-Power 41 (Unexpected Reboots):** **0** occurrences.
 * **Event Errors:** 60 System event errors and 25 Application errors over 7 days (normal background Windows telemetry noise).
 * **Operating Temperatures & Volatiles:** Stable; hardware functioning within nominal thermal parameters.
+
+---
+
+## 9. Automated Backup System & Data Protection Topology (Restic REST)
+
+`rath15-htpc` operates a fully automated, headless, zero-trust encrypted backup pipeline terminating on dedicated network storage, protecting against hardware drive failure and ransomware encryption without interrupting living room media playback.
+
+### 9.1. Backend Topology
+* **Hypervisor Storage Host:** `RATH15NAS` (`192.168.68.169` - Proxmox VE 8.x). Retained as a vanilla PVE hypervisor. Physical Btrfs subvolume `@backups` on `/dev/sdd1` mounted at `/mnt/backups` (3.6 TB free pool).
+* **LXC Service Node:** Container ID `920` (`services` - `192.168.68.175` - Ubuntu 24.04).
+  * Storage Bind-Mount: `mp1: /mnt/backups,mp=/mnt/backups`.
+  * Management Dashboard: Managed via Dockge (`/opt/stacks/rest-server`).
+  * Server Container: `restic/rest-server:latest` listening on port `8000` (TCP).
+  * Enforced Security Flags: `--append-only` (ransomware immunity) and `--private-repos` (tenant isolation).
+  * Repository Path: `/mnt/backups/htpc` (isolated from workstation repository `/mnt/backups/workstation`).
+
+### 9.2. Client Host Configuration (`rath15-htpc`)
+* **Binary Runtime:** `C:\ProgramData\restic\restic.exe` (v0.19.1, added to Machine `PATH`).
+* **Encryption Key:** AES-256 client key stored at `C:\ProgramData\restic\repo_key.txt` with locked NTFS permissions (`SYSTEM:F`, `Administrators:F`, `benka_000:RW`).
+* **Automation Script:** `C:\ProgramData\restic\backup.ps1` with automatic log rotation (`backup.log` capped at 5 MB) and native Win32 output streaming.
+* **Volume Shadow Copy (VSS):** Uses `--use-fs-snapshot` via Windows COM VSS service to create point-in-time snapshots, preventing file access locking on open game saves, databases, and registry hives.
+* **Scheduled Task:** `\ResticBackup` executing daily at 21:00 (9:00 PM) as `NT AUTHORITY\SYSTEM` with highest privileges (`RunLevel: Highest`).
+* **Authoritative Policy & Playbook:** Documented in [`backup_strategy.md`](file:///C:/Users/benma/coding/agy_project/Projects/htpc/backup_strategy.md).
+
