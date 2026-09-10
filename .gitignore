@@ -9,6 +9,7 @@
 *.bak
 dump/
 scratch/
+*.zip
 
 # OS artifacts
 Thumbs.db

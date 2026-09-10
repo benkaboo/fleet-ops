@@ -222,3 +222,27 @@ This workstation adheres to an explicit tradeoff discipline: no component, servi
 ## 10. Architectural Decisions & Maintenance History
 
 Major architectural decisions and maintenance interventions are tracked under Architectural Decision Records (ADR) in [`CHANGELOG.md`](file:///C:/Users/benma/coding/agy_project/Projects/Workstation/CHANGELOG.md).
+
+---
+
+## 11. Automated Backup System & Data Protection Topology (Restic REST)
+
+The workstation operates an automated, headless, zero-trust encrypted backup pipeline terminating on local network storage (`RATH15NAS`), protecting against hardware NVMe drive failure and ransomware encryption without dependency on external public cloud providers (replacing cancelled Microsoft 365 / OneDrive subscription).
+
+### 11.1. Backend Infrastructure
+* **Hypervisor Storage Host:** `RATH15NAS` (`192.168.68.169` - Proxmox VE 8.x). Btrfs subvolume `@backups` on `/dev/sdd1` mounted at `/mnt/backups` (3.6 TB free pool).
+* **LXC Service Node:** CT `920` (`services` - `192.168.68.175` - Ubuntu 24.04).
+  * Storage Bind-Mount: `/mnt/backups`.
+  * Management: Managed via Dockge (`/opt/stacks/rest-server`).
+  * Server Container: `restic/rest-server:latest` on port `8000` (TCP) with `--append-only` and `--private-repos`.
+  * Repository Path: `/mnt/backups/workstation` (tenant-isolated from `htpc`).
+
+### 11.2. Client Configuration (`LENOVO16_LP`)
+* **Binary Runtime:** `restic.exe` v0.19.1 (in system `PATH`).
+* **Encryption Key:** AES-256 client key stored at `C:\ProgramData\restic\repo_key.txt` with locked NTFS permissions (`SYSTEM:F`, `Administrators:F`, `benma:M`).
+* **Automation Script:** `C:\ProgramData\restic\backup.ps1` with automatic log rotation (`backup.log` capped at 5 MB) and native Win32 output streaming.
+* **Scheduled Task:** `\ResticBackup` executing daily at 21:00 (9:00 PM).
+* **Target Datasets:** `OneDrive` (808 fully hydrated personal files), `coding` (active Git repositories), `.ssh` (client keys), `.keepsidian` (Obsidian knowledge base), `Documents`, `Desktop`, `Pictures`.
+* **Exclusions:** `Saved Games` (verified 100% cloud-synced via Steam Cloud), `.venv`, `node_modules`, `__pycache__`, `Downloads`, `AppData\Local\Temp`.
+* **Authoritative Policy:** Documented in [`backup_strategy.md`](backup_strategy.md).
+
