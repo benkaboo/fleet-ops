@@ -86,11 +86,11 @@ The storage architecture is divided between high-speed local SATA SSD storage fo
 ### 4.2. Local Logical Partitions
 | Drive | Root | Total (GB) | Used (GB) | Free (GB) | % Free | Role / Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **C:** | `C:\` | 930.6 GB | 454.6 GB | **475.9 GB** | **51.1%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
+| **C:** | `C:\` | 930.6 GB | 451.5 GB | **479.1 GB** | **51.5%** | Windows 11 OS, Applications, Dedicated Paging File (`pagefile.sys`) |
 | **D:** | `D:\` | 7.9 GB | 7.9 GB | **0.0 GB** | **0.0%** | Recovery / Reserved Image Partition |
-| **F:** | `F:\` | 1,401.8 GB | 1,288.1 GB | **113.7 GB** | **8.1%** | Mechanical Partition 1 (Local Media/Games; +21.7 GB gained via Recycle Bin & pagefile purge) |
-| **G:** | `G:\` | 957.0 GB | 867.3 GB | **89.7 GB** | **9.4%** | Mechanical Partition 2 (Downloads/Steam; +11.8 GB gained via installer purge & pagefile purge) |
-| **H:** | `H:\` | 1,367.2 GB | 1,266.6 GB | **100.6 GB** | **7.4%** | Mechanical Partition 3 (Archive Media; +16.5 GB gained via game zip purge & pagefile purge) |
+| **F:** | `F:\` | 1,401.8 GB | 1,246.4 GB | **155.4 GB** | **11.1%** | Mechanical Partition 1 (Steam Library / Media; +63.4 GB gained via game purge) |
+| **G:** | `G:\` | 957.0 GB | 658.2 GB | **298.8 GB** | **31.2%** | Mechanical Partition 2 (Steam Library / Downloads; +209.1 GB gained via orphaned duplicate purge) |
+| **H:** | `H:\` | 1,367.2 GB | 994.6 GB | **372.6 GB** | **27.3%** | Mechanical Partition 3 (Steam Library / Archive Media; +272.0 GB gained via game uninstalls) |
 
 ### 4.3. Virtual Memory & Paging Topology
 * **Dedicated SSD Paging:** Windows Virtual Memory (`PagingFiles`) is consolidated strictly onto high-speed Crucial MX500 SATA SSD storage (`C:\pagefile.sys 8000 16000`).
