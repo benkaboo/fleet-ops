@@ -62,7 +62,7 @@ flowchart TD
 
 Target data is organized into rigorous tiers to ensure that 100% of critical personal assets are protected while avoiding storage and bandwidth waste on disposable or re-downloadable files.
 
-### 3.1. Target Inclusion Inventory
+### 3.1. `rath15-htpc` Target Inclusion Inventory
 
 | Tier | Owner / Profile | Target Directory | Approx. Size | Rationale & Criticality |
 | :--- | :--- | :--- | :--- | :--- |
@@ -81,7 +81,7 @@ Target data is organized into rigorous tiers to ensure that 100% of critical per
 | **Tier 3** | `benka_000` | `C:\Users\benka_000\Desktop` | ~592 MB | Active desktop shortcuts, notes, and temporary working files. |
 | **Tier 3** | `dylan_93nze6m` | `C:\Users\dylan_93nze6m\Desktop` | ~5.3 GB (excl. ISO) | Active desktop workspace files and shortcuts. |
 
-*Total Initial Footprint:* **~10.8 GB** (Deduplicated and compressed via zstd on the Btrfs pool).
+*HTPC Total Baseline Footprint:* **~7.77 GiB** (~4.65 GiB stored compressed on Btrfs).
 
 ---
 
