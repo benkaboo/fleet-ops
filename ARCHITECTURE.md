@@ -246,3 +246,11 @@ The workstation operates an automated, headless, zero-trust encrypted backup pip
 * **Exclusions:** `Saved Games` (verified 100% cloud-synced via Steam Cloud), `.venv`, `node_modules`, `__pycache__`, `Downloads`, `AppData\Local\Temp`.
 * **Authoritative Policy:** Documented in [`backup_strategy.md`](backup_strategy.md).
 
+### 11.3. Calibre Media Synchronization Pipeline
+* **Purpose:** Headless, non-destructive synchronization of the primary curated Calibre digital ebook collection to local NAS media storage, feeding the containerized Calibre-Web reader service without risk of purging manually uploaded web titles.
+* **Source Dataset:** `D:\Calibre_Library_Main` (~19.2 GB / 3,257 author directories, `metadata.db`).
+* **Destination Target:** `S:\Media\Books` (`\\RATH15NAS\simba\Media\Books` / host path `/mnt/simba/Media/Books`).
+* **Client Automation Script:** `C:\ProgramData\calibre-sync\sync_calibre.ps1` (versioned in [`scripts/sync_calibre.ps1`](scripts/sync_calibre.ps1)).
+* **Sync Strategy:** Additive-only (`robocopy.exe /E /XO /FFT /R:2 /W:2 /MT:8 /NP /NDL`). Deletions (`/MIR`, `/PURGE`) are explicitly omitted to preserve titles uploaded directly to Calibre-Web or NAS storage.
+* **Scheduled Task:** `\CalibreSyncDaily` running daily at 21:30 (9:30 PM) under the interactive user principal (`benma`).
+* **Service Consumer:** CT `920` (`services`), container `calibre-web` mounting `/mnt/simba/Media/Books:/books` (Port 8083).
