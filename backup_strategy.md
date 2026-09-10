@@ -17,7 +17,7 @@ flowchart TD
         TaskWS["Scheduled Task: \\ResticBackup\nCadence: Daily @ 21:00\nEngine: restic.exe v0.19.1"]
         ScriptWS["C:\\ProgramData\\restic\\backup.ps1"]
         KeyWS["C:\\ProgramData\\restic\\repo_key.txt (AES-256)"]
-        TargetsWS["Data Targets:\nOneDrive (Hydrated), coding, .ssh, .keepsidian"]
+        TargetsWS["Data Targets:\nOneDrive (Hydrated), coding, .ssh, .keepsidian, Calibre Library"]
     end
 
     subgraph LXC920 ["LXC 920: services (192.168.68.175)"]
@@ -67,11 +67,12 @@ flowchart TD
 | **Tier 1** | `C:\Users\benma\coding` | **~65 MB** | 4,118 files | **Active Intellectual Property:** Git repositories (`agy_project`, `kraken`, `reflection-engine`) and commit histories. |
 | **Tier 1** | `C:\Users\benma\.ssh` | **<0.1 MB** | 7 files | **Security & Access Keys:** Client SSH private keys (`id_ed25519`) and remote configs. Essential for accessing `rath15-htpc`, `RATH15NAS`, and GitHub. |
 | **Tier 1** | `C:\Users\benma\.keepsidian` | **~140 MB** | 1 file | **Knowledge Base:** Consolidated Obsidian and Google Keep notes archive. |
+| **Tier 1** | `D:\Calibre_Library_Main` | **~19.2 GB** | 13,472 files | **Curated Ebook Library:** Personal Calibre digital library (7,227 EPUBs, 4,710 covers, 662 MOBIs, 409 PDFs, `metadata.db`). Irreplaceable personal digital collection. |
 | **Tier 1** | `C:\Users\benma\Documents` | **<1 MB** | 2 files | Local document root. |
 | **Tier 3** | `C:\Users\benma\Desktop` | **<1 MB** | 64 files | Active desktop workspace shortcuts and temporary working files. |
 | **Tier 3** | `C:\Users\benma\Pictures` | **<1 MB** | 5 files | Local photo directory. |
 
-*Workstation Baseline Stored Size:* **514 MiB** (zstd compressed & deduplicated on Btrfs).
+*Workstation Baseline Stored Size:* **~19.8 GiB uncompressed** (~17.9 GiB stored compressed & deduplicated on Btrfs).
 
 ---
 

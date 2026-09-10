@@ -242,7 +242,7 @@ The workstation operates an automated, headless, zero-trust encrypted backup pip
 * **Encryption Key:** AES-256 client key stored at `C:\ProgramData\restic\repo_key.txt` with locked NTFS permissions (`SYSTEM:F`, `Administrators:F`, `benma:M`).
 * **Automation Script:** `C:\ProgramData\restic\backup.ps1` with automatic log rotation (`backup.log` capped at 5 MB) and native Win32 output streaming.
 * **Scheduled Task:** `\ResticBackup` executing daily at 21:00 (9:00 PM).
-* **Target Datasets:** `OneDrive` (808 fully hydrated personal files), `coding` (active Git repositories), `.ssh` (client keys), `.keepsidian` (Obsidian knowledge base), `Documents`, `Desktop`, `Pictures`.
+* **Target Datasets:** `OneDrive` (808 fully hydrated personal files), `coding` (active Git repositories), `.ssh` (client keys), `.keepsidian` (Obsidian knowledge base), `D:\Calibre_Library_Main` (13,472 files / 19.2 GB ebook archive), `Documents`, `Desktop`, `Pictures`.
 * **Exclusions:** `Saved Games` (verified 100% cloud-synced via Steam Cloud), `.venv`, `node_modules`, `__pycache__`, `Downloads`, `AppData\Local\Temp`.
 * **Authoritative Policy:** Documented in [`backup_strategy.md`](backup_strategy.md).
 
