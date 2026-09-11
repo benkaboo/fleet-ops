@@ -10,6 +10,8 @@
 dump/
 scratch/
 *.zip
+*.png
+
 
 # OS artifacts
 Thumbs.db
