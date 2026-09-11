@@ -196,5 +196,35 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 * **Automation Script:** `C:\ProgramData\restic\backup.ps1` with automatic log rotation (`backup.log` capped at 5 MB) and native Win32 output streaming.
 * **Volume Shadow Copy (VSS):** Uses `--use-fs-snapshot` via Windows COM VSS service to create point-in-time snapshots, preventing file access locking on open game saves, databases, and registry hives.
 * **Scheduled Task:** `\ResticBackup` executing daily at 21:00 (9:00 PM) as `NT AUTHORITY\SYSTEM` with highest privileges (`RunLevel: Highest`).
-* **Authoritative Policy & Playbook:** Documented in [`backup_strategy.md`](file:///C:/Users/benma/coding/agy_project/Projects/htpc/backup_strategy.md).
+* **Authoritative Policy & Playbook:** Documented in [`backup_strategy.md`](backup_strategy.md).
+
+---
+
+## 10. Headless In-Home Game Streaming & Gaming User Architecture
+
+To enable high-performance PC gaming streamed to remote workstations without disrupting active living room television playback, `rath15-htpc` implements a headless Steam Remote Play topology with a hardened privilege model:
+
+### 10.1. User Account Segregation & Zero-LPE Security
+* **Dedicated Standard User (`gamer`):**
+  * Member of `Remote Desktop Users` only; possesses **zero administrative privileges**.
+  * Contains **zero persistent SYSTEM-elevated scheduled tasks**, eliminating local privilege escalation (LPE) vectors (MITRE ATT&CK T1053.005) from game mods or third-party binaries.
+  * Console session transfers (`tscon %SessionId% /dest:console`) are triggered exclusively from remote administration via OpenSSH using the administrative `benka_000` ed25519 key.
+
+### 10.2. Display & TV Independence
+* The physical television attached to `rath15-htpc` operates on an alternate HDMI input (Google TV for household viewing).
+* Console session handoffs bind Windows rendering directly to the NVIDIA GeForce RTX 3060 physical display adapter without sending HDMI-CEC commands or interrupting TV video playback.
+
+### 10.3. Steam Host & Remote Play Runtime
+* **Account:** `coppertrumpet2` configured with persistent OAuth/JWT credentials (valid through April 2027) and `AutoLogin: 1`.
+* **Hardware Encoding:** NVIDIA NVENC hardware encoder (H.264 / HEVC) providing 60 FPS video capture with sub-10ms transport latency.
+* **Audio Routing:** Digital low-latency audio capture via `Steam Streaming Speakers`.
+* **Network Ports:** TCP `27036` (Control), UDP `27031` / `27036` (Streaming Transport).
+
+### 10.4. Installed Titles & Mod Infrastructure
+* **Batman: Arkham Asylum GOTY Edition:**
+  * Location: `F:\SteamLibrary\steamapps\common\Batman Arkham Asylum GOTY` (App ID 35140).
+  * **Asylum Reborn 4K/2K HD Overhaul:** Patched with 578 MB high-res texture cache (`Texture2D_0.tfc`) and 351 updated packages in `BmGame\CookedPC\`.
+  * **Engine Tuning:** `BmEngine.ini` configured with `PoolSize=2048` (2 GB texture streaming allocation) and high-res LOD overrides.
+  * **Launcher:** Neato's standalone .NET 8 `BmLauncher.exe` v2.1.0.5 deployed into `Binaries\`.
+  * **Rollback Safety:** Instant recovery backups maintained at `BmGame\CookedPC\Textures.tfc.vanilla.bak` (945 MB) and `Binaries\BmLauncher.exe.vanilla.bak` (8.5 MB).
 
