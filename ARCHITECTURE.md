@@ -254,3 +254,62 @@ The workstation operates an automated, headless, zero-trust encrypted backup pip
 * **Sync Strategy:** Additive-only (`robocopy.exe /E /XO /FFT /R:2 /W:2 /MT:8 /NP /NDL`). Deletions (`/MIR`, `/PURGE`) are explicitly omitted to preserve titles uploaded directly to Calibre-Web or NAS storage.
 * **Scheduled Task:** `\CalibreSyncDaily` running daily at 21:30 (9:30 PM) under the interactive user principal (`benma`).
 * **Service Consumer:** CT `920` (`services`), container `calibre-web` mounting `/mnt/simba/Media/Books:/books` (Port 8083).
+
+---
+
+## 12. In-Home Headless Game Streaming Topology (HTPC Remote Play)
+
+The workstation operates as a lightweight, low-latency streaming client for high-end PC gaming rendered remotely on `rath15-htpc`, completely independent of the physical living room television.
+
+```mermaid
+flowchart TD
+    subgraph Client ["Workstation (LENOVO16_LP - 192.168.68.166)"]
+        WorkstationSteam["Steam Client (coppertrumpet2)"]
+        Controller["Xbox Wireless Controller (Bluetooth)"]
+        SwitchScript["scripts/htpc/switch_and_stream.ps1"]
+    end
+
+    subgraph Host ["HTPC (rath15-htpc - 192.168.68.162)"]
+        RTX3060["NVIDIA GeForce RTX 3060 (NVENC 60 FPS)"]
+        GamerSession["Interactive User: gamer (Session console)"]
+        HTPCSteam["Steam Host (coppertrumpet2)"]
+        Libraries["Steam Libraries: F:\SteamLibrary (155GB), H:\SteamLibrary (372GB)"]
+    end
+
+    subgraph Security ["Zero-LPE Governance & Control"]
+        SSHAdmin["OpenSSH (benka_000 ed25519)"]
+        SystemTscon["Temporary SYSTEM Task (tscon %SessionId% /dest:console)"]
+    end
+
+    SwitchScript -->|SSH Port 22| SSHAdmin
+    SSHAdmin -->|One-Shot Elevation| SystemTscon
+    SystemTscon -->|Attach Console| GamerSession
+    Controller -->|Steam Input| WorkstationSteam
+    WorkstationSteam <-->|Remote Play TCP/UDP 27036| HTPCSteam
+    HTPCSteam --> RTX3060
+    HTPCSteam --> Libraries
+```
+
+### 12.1. Host & Hardware Specifications
+* **Target Node:** `rath15-htpc` (`192.168.68.162` on local subnet `192.168.68.0/24`).
+* **GPU & Acceleration:** NVIDIA GeForce RTX 3060 (12GB GDDR6, Driver `32.0.15.9621`). NVENC hardware encoder (H.264 / HEVC) delivers 60 FPS video capture with sub-10ms network transport latency.
+* **Audio Pipeline:** Low-latency digital audio capture routed via Steam Streaming Speakers.
+* **Storage Distribution:** OS on `C:`, dedicated Steam Libraries on `F:\SteamLibrary` (155 GB free) and `H:\SteamLibrary` (372 GB free).
+
+### 12.2. Zero-LPE Security Architecture & TV Independence
+* **Physical TV Isolation:** The physical TV screen connected to `rath15-htpc` operates on an alternate HDMI input (Google TV for children's viewing). Windows session handoffs (`tscon %SessionId% /dest:console`) bind directly to the physical display adapter without sending HDMI CEC commands or disrupting active TV playback.
+* **Least Privilege Execution (Zero-LPE):** 
+  * Gaming workloads execute strictly under local unprivileged user `gamer` (member of `Remote Desktop Users` only).
+  * `gamer` possesses **zero administrative privileges** and **zero persistent SYSTEM-elevated scheduled tasks**, eliminating local privilege escalation (LPE) vulnerabilities from malicious game mods or third-party executables.
+  * Console session handoffs are triggered exclusively from the Workstation over authenticated OpenSSH using the administrative `benka_000` ed25519 key.
+
+### 12.3. Client Automation & Toolchain
+* **Automation Entrypoint:** [`scripts/htpc/switch_and_stream.ps1`](scripts/htpc/switch_and_stream.ps1)
+  1. Inspects active HTPC sessions via SSH.
+  2. If foreign users are on console, performs graceful logoff.
+  3. Detects `gamer` RDP session and executes one-shot SYSTEM `tscon` console attachment via [`scripts/htpc/do_tscon.ps1`](scripts/htpc/do_tscon.ps1).
+  4. Deploys and executes [`scripts/htpc/ensure_steam_stream.ps1`](scripts/htpc/ensure_steam_stream.ps1) to confirm Steam is running in the active GPU console session with persistent authentication under `coppertrumpet2`.
+  5. Validates Steam Remote Play TCP port `27036`.
+* **Telemetry Utility:** [`scripts/htpc/get_screenshot.ps1`](scripts/htpc/get_screenshot.ps1) captures non-invasive, DPI-aware 4K desktop screenshots of the active console session without user disruption.
+* **Controller Routing:** Physical Xbox controller connects wirelessly via Bluetooth to the Workstation; Steam Input translates gamepad controls directly into target DirectX 9/11/12 game runtimes.
+
