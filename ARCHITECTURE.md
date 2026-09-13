@@ -26,7 +26,7 @@
 * `192.168.68.0/24 dev vmbr0 proto kernel scope link src 192.168.68.169`
 
 ### WireGuard Peer Configuration (`wg0`)
-* **Endpoint:** `203.132.95.12:51820`
+* **Endpoint:** `maslen.id.au:51820` (dynamically resolved; currently `157.85.240.12:51820`)
 * **Allowed IPs:** `10.10.0.0/24`, `192.168.6.0/24`
 * **Persistent Keepalive:** 25 seconds
 * **Systemd Service:** `wg-quick@wg0.service` (`enabled` on boot)

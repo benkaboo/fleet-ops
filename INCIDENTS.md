@@ -8,11 +8,43 @@ This document tracks operational incidents, outages, investigations, and resolut
 
 | Incident ID | Date | Severity | Affected Service | Impact | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **INC-20260913-01** | 2026-09-13 | Medium | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down after peer ISP WAN IP migration | Resolved |
 | **INC-20260906-01** | 2026-09-06 | High | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down; peer unreachable | Resolved |
 
 ---
 
 ## Detailed Incident Reports
+
+### INC-20260913-01: WireGuard Tunnel Outage due to Peer ISP Migration & Stale Host DNS
+
+* **Incident ID:** `INC-20260913-01`
+* **Date & Detection Time:** 2026-09-13 17:01:08 AEST
+* **Failure Inception:** Following remote peer ISP migration
+* **Reported By:** User / Remote Peer Operator (Brother)
+* **Affected Components:** `wg-quick@wg0.service`, interface `wg0`, cross-subnet routing to `192.168.6.0/24`
+* **Status:** Resolved (Endpoint migrated to dynamic hostname `maslen.id.au:51820`; `/etc/resolv.conf` updated with redundant resolvers; tunnel up and peer pingable)
+
+#### 1. Symptom & Triage
+* **Reported Behavior:** Remote peer changed ISP, changing public endpoint IP. Pings across tunnel from `rath15nas` to `10.10.0.1` failed with 100% packet loss.
+* **Triage Steps:**
+  1. Validated reachability to remote peer's new public IP `157.85.240.12`: ICMP ping succeeded with 0% loss (~20–47ms latency).
+  2. Discovered host DNS failure: `/etc/resolv.conf` pointed to deprecated Superloop resolver `119.40.106.35`, which returned `REFUSED` on all hostname lookups including `maslen.id.au`.
+  3. Confirmed `/etc/wireguard/wg0.conf` contained hardcoded deprecated IP `203.132.95.12:51820`.
+
+#### 2. Root Cause Analysis
+1. Peer WAN IP changed from `203.132.95.12` to `157.85.240.12`. WireGuard will not auto-discover the new IP when the endpoint is hardcoded as an IP address in `wg0.conf`.
+2. Stale DNS configuration on `rath15nas` prevented resolving the dynamic DNS domain `maslen.id.au`.
+
+#### 3. Action & Remediation Plan
+1. Created automated remediation scripts [`scripts/update-wireguard-endpoint.sh`](scripts/update-wireguard-endpoint.sh) and [`scripts/update-wireguard-endpoint.ps1`](scripts/update-wireguard-endpoint.ps1).
+2. Updated `/etc/resolv.conf` to add local router gateway `192.168.68.1` and `1.1.1.1`.
+3. Updated `/etc/wireguard/wg0.conf` to configure `Endpoint = maslen.id.au:51820`.
+4. Restarted `wg-quick@wg0.service`.
+5. Verified tunnel state and reachability to `10.10.0.1` (~19ms) and `192.168.6.1` (~22ms).
+
+#### 4. Prevention & Lessons Learned
+* **FQDN Endpoints:** Always use dynamic DNS hostnames (FQDNs) rather than hardcoded public IPs for WireGuard endpoints where WAN IPs are subject to ISP reassignment.
+* **Resilient Host Resolvers:** Ensure hypervisor `/etc/resolv.conf` includes the local LAN gateway (`192.168.68.1`) and public fallback resolvers (`1.1.1.1`) rather than provider-specific DNS IPs that fail across ISP switches.
 
 ### INC-20260906-01: WireGuard Boot Failure due to Malformed Whitespace in `wg0.conf`
 
