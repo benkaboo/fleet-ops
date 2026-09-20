@@ -101,8 +101,10 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 
 | VMID | Type | Name | Status | Memory | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 910 | LXC | `codebox` | Stopped | - | Development container (`192.168.68.172`) |
+| 910 | LXC | `codebox` | Running | - | Development container (`192.168.68.172`) |
 | 920 | LXC | `services` | Running | 4096 MB | Docker services host (`192.168.68.175/24`), Ubuntu 24.04, 4 vCPUs |
+| 930 | LXC | `agcode` | Running | - | Antigravity execution container |
+| 940 | QEMU | `haos` | Provisioning | 2048 MB | Home Assistant OS KVM VM, 2 vCPUs, 32 GB SSD, attached to `vmbr0` |
 | 900 | QEMU | `openwrt` | Stopped | 512 MB | Virtual router / firewall |
 | 901 | QEMU | `test-lan` | Stopped | 512 MB | Isolated test LAN environment |
 
@@ -131,6 +133,21 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Uptime Kuma Health Monitor** (`/opt/stacks/uptime-kuma/compose.yaml`): 24/7 self-hosted monitoring and incident alerting daemon listening on port `3001` and routed via Caddy at `https://status.dixon.home` and `https://status.192.168.68.175.nip.io`. Continuously monitors container HTTP health, gateway ping, and WireGuard remote peer status with push alerting.
 * **Deployment Automation:**
   * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `21-fix-homepage-hosts.sh`).
+
+### 4.2. Dedicated Home Automation Host (VM 940: `haos`)
+
+* **Virtual Machine Specifications:**
+  * **OS / Flavor:** Home Assistant OS (HAOS) official KVM / QEMU appliance.
+  * **Network:** Attached to `vmbr0` (Management / Main LAN `192.168.68.0/24`), dynamic DHCP allocation from router (`192.168.68.1`).
+  * **Resources:** 2 vCPUs (`host` type), 2048 MB RAM (expandable on-demand), 32 GB SSD boot disk on `local-lvm`.
+  * **Architecture & Features:** UEFI (`ovmf`) BIOS, `q35` machine type, `virtio-scsi-pci` controller with SSD discard enabled, QEMU guest agent enabled (`agent: 1`).
+* **Topology & Integration Role:**
+  * Direct L2 bridge on `vmbr0` enables native, zero-forwarding mDNS / SSDP broadcast auto-discovery for local smart home hardware:
+    * **Google Cast:** Google Nest Audio, Nest Mini, and Chromecast devices for local media playback and Text-to-Speech (TTS) announcements.
+    * **Local IoT:** Direct LAN communication with Matter/Thread controllers, local switches, and future USB Zigbee/Z-Wave coordinators via host USB passthrough.
+* **Deployment Automation:**
+  * Staged installation script: [`scripts/setup-haos-vm.sh`](scripts/setup-haos-vm.sh)
+  * Workstation orchestrator: [`scripts/deploy-haos-vm.ps1`](scripts/deploy-haos-vm.ps1)
 
 ---
 
