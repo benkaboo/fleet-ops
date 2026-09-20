@@ -15,7 +15,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `vmbr0` | Linux Bridge | `192.168.68.169/24` | UP | Management LAN & Proxmox Web GUI bridge |
 | `vmbr1` | Linux Bridge | Unassigned | DOWN | Secondary bridge |
-| `wg0` | WireGuard Interface | `10.10.0.4/24` | UP | WireGuard VPN tunnel (Port: `40846`) |
+| `wg0` | WireGuard Interface | `10.10.0.4/24` | UP | WireGuard VPN tunnel (Listening Port: `51820`) |
 | `veth910i0` | Virtual Ethernet | Attached to `vmbr0` | UP | Virtual interface for LXC 910 (`codebox`) |
 | `veth920i0` | Virtual Ethernet | Attached to `vmbr0` | UP | Virtual interface for LXC 920 (`services`) |
 
@@ -25,11 +25,17 @@
 * `192.168.6.0/24 dev wg0 scope link`
 * `192.168.68.0/24 dev vmbr0 proto kernel scope link src 192.168.68.169`
 
-### WireGuard Peer Configuration (`wg0`)
-* **Endpoint:** `maslen.id.au:51820` (dynamically resolved; currently `157.85.240.12:51820`)
-* **Allowed IPs:** `10.10.0.0/24`, `192.168.6.0/24`
-* **Persistent Keepalive:** 25 seconds
-* **Systemd Service:** `wg-quick@wg0.service` (`enabled` on boot)
+### WireGuard Configuration & Peer Inventory (`wg0`)
+* **Topology Role:** Inbound Listening Endpoint / Hub (Role Reversal from brother-hosted to Ben-hosted).
+* **Listening Port:** `51820` (UDP port forwarded from router `192.168.68.1` $\rightarrow$ `192.168.68.169:51820`).
+* **Public Endpoint:** `157.85.240.10:51820` (Neptune Internet dedicated static IPv4).
+* **Systemd Service:** `wg-quick@wg0.service` (`enabled` on boot).
+
+#### Registered Peers:
+| Peer Name | Virtual IP | Allowed IPs | Roaming / Endpoint | Role / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Brother Router** | `10.10.0.1` | `10.10.0.0/24`, `192.168.6.0/24` | Dynamic / Roaming (`115.70.61.168`) | Site-to-site VPN link to brother's home network (`192.168.6.0/24`). |
+| **Ben Mobile Phone** | `10.10.0.5` | `10.10.0.5/32` | Dynamic / Roaming (Cellular / Remote Wi-Fi) | Split-tunnel mobile client for remote homelab management and media access. |
 
 ### 2.1. Gateway & NAT Forwarding (Cross-Subnet Access)
 
@@ -118,11 +124,13 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Authelia SSO, 2FA & OIDC Provider** (`/opt/stacks/authelia/compose.yaml`): Centralized authentication portal and OpenID Connect (OIDC) provider exposed on port `9091` and joined to `gateway_net`. Multi-domain session cookies configured for both `dixon.home` and `192.168.68.175.nip.io`. User database uses Argon2id password hashing; storage backed by `/opt/stacks/authelia/data/db.sqlite3`. Configured with `X_AUTHELIA_CONFIG_FILTERS=template` for dynamic secret templating and dedicated RSA signing key (`/opt/stacks/authelia/config/oidc.key`) serving registered OIDC clients (e.g. `jellyfin`).
   * **Jellyfin Media Server** (`/opt/stacks/jellyfin/compose.yaml`): Media streaming server exposed on port `8096` and routed via Caddy at `https://jellyfin.dixon.home` and `https://jellyfin.192.168.68.175.nip.io`. Media library mapped read-only from `/mnt/simba/Media`. Configured with application-level OIDC Single Sign-On via `jellyfin-plugin-sso` (v4.0.0.4) using Authelia backend (`client_secret_post`, PAR disabled). Edge proxy uses native routing without forward-auth redirects, preserving smart TV (Sony Android TV) compatibility, Quick Connect, and native mobile clients. Container includes `extra_hosts` mapping `auth.dixon.home:192.168.68.175` and mounts Caddy internal PKI root CA (`/etc/ssl/certs/ca-certificates.crt:ro`) for trusted internal TLS validation.
   * **Calibre-Web E-Book Library** (`/opt/stacks/calibre-web/compose.yaml`): Digital book management exposed on port `8083` and routed via Caddy at `https://books.dixon.home` and `https://books.192.168.68.175.nip.io`. Configured with linuxserver Calibre-Web mods for cover conversion, backed by `/mnt/simba/Books` with seeded `metadata.db`.
-  * **FileBrowser Web File Manager** (`/opt/stacks/filebrowser/compose.yaml`): Lightweight web file explorer exposed on port `8082`, protected by Authelia SSO, and routed via Caddy at `https://files.dixon.home` and `https://files.192.168.68.175.nip.io`. Mounts the full Btrfs storage root (`/mnt/simba`) for browser-based file management across all shares.
+  * **FileBrowser Web File Manager** (`/opt/stacks/filebrowser/compose.yaml`): Lightweight web file explorer exposed on port `8082`, protected by Authelia SSO, and routed via Caddy at `https://files.dixon.home` and `https://files.192.168.68.175.nip.io`. Mounts the full Btrfs storage root (`/mnt/simba`) for browser-based file management across all shares. Database permissions maintained at `0664` owned by `1000:1000`.
   * **AdGuard Home Local DNS & Ad-Blocking** (`/opt/stacks/adguard/compose.yaml`): High-performance DNS server and network-wide privacy sinkhole listening on port `53` (TCP/UDP) and port `8085` (direct web). Routed via Caddy at `https://adguard.dixon.home` and `https://adguard.192.168.68.175.nip.io`. Provides internal DNS rewrites for `*.dixon.home` $\rightarrow$ `192.168.68.175` with zero external DNS leakage.
   * **Audiobookshelf** (`/opt/stacks/audiobookshelf/compose.yaml`): Self-hosted audiobook and podcast server exposed on port `13378` and routed via Caddy at `https://audiobooks.dixon.home` and `https://audiobooks.192.168.68.175.nip.io`. Libraries mapped from `/mnt/simba/Media/Audiobooks` and `/mnt/simba/Media/Podcasts`. Uses native authentication at the proxy level to preserve seamless streaming and offline downloads for official and third-party mobile clients (e.g. Absorb, Plappa) as well as the Progressive Web App (PWA).
+  * **Homepage Dashboard ("Dixon Fleet")** (`/opt/stacks/homepage/compose.yaml`): Modern application launchpad and central homelab portal exposed on port `3000` and routed via Caddy at `https://home.dixon.home` and `https://home.192.168.68.175.nip.io` (plain HTTP at `http://home.192.168.68.175.nip.io`). Integrates directly with `/var/run/docker.sock` for live container health telemetry, CPU/RAM stats, and bookmarks to both local and remote brother services across WireGuard.
+  * **Uptime Kuma Health Monitor** (`/opt/stacks/uptime-kuma/compose.yaml`): 24/7 self-hosted monitoring and incident alerting daemon listening on port `3001` and routed via Caddy at `https://status.dixon.home` and `https://status.192.168.68.175.nip.io`. Continuously monitors container HTTP health, gateway ping, and WireGuard remote peer status with push alerting.
 * **Deployment Automation:**
-  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `14-setup-readonly-auditor.sh`).
+  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `21-fix-homepage-hosts.sh`).
 
 ---
 

@@ -8,12 +8,52 @@ This document tracks operational incidents, outages, investigations, and resolut
 
 | Incident ID | Date | Severity | Affected Service | Impact | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **INC-20260919-01** | 2026-09-19 | High | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down due to peer loss of static IP / IPv4 DNS | Resolved |
 | **INC-20260913-01** | 2026-09-13 | Medium | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down after peer ISP WAN IP migration | Resolved |
 | **INC-20260906-01** | 2026-09-06 | High | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down; peer unreachable | Resolved |
 
 ---
 
 ## Detailed Incident Reports
+
+### INC-20260919-01: WireGuard Tunnel Outage due to Peer Static IP Deprecation (Resolved via Role Reversal)
+
+* **Incident ID:** `INC-20260919-01`
+* **Date & Detection Time:** 2026-09-19 10:34:37 AEST
+* **Failure Inception:** ~2026-09-17 18:00 AEST (last active handshake ~1.7 days prior)
+* **Reported By:** User / Remote Peer Operator (Brother)
+* **Affected Components:** `wg-quick@wg0.service`, interface `wg0`, cross-subnet routing to `192.168.6.0/24`
+* **Status:** Resolved (Reversed topology roles: `rath15nas` configured as inbound listener on port `51820` behind Neptune static IPv4 `157.85.240.10`; Deco M9 port forward activated; remote peer reconfigured to connect outbound; tunnel up, handshakes active, peer pingable)
+
+#### 1. Symptom & Triage
+* **Reported Behavior:** Remote peer lost static IP. Host `rath15nas` could not establish handshake with remote endpoint (`maslen.id.au:51820`). Pings to `10.10.0.1` and `192.168.6.1` failed.
+* **Triage Steps:**
+  1. Inspected DNS resolution for `maslen.id.au`: Domain only returned an IPv6 `AAAA` record (`2401:d002:b504:3300::1`), with no public IPv4 `A` record.
+  2. Inspected `rath15nas` WireGuard interface: `sudo wg show wg0` confirmed last handshake was 1 day, 17 hours ago.
+  3. Validated local WAN connectivity: Verified Ben's public IP `157.85.240.10` is a dedicated static IPv4 with Neptune Internet (`AS151660`, PTR `ip-157.85.240.10.neptune.net.au`).
+
+#### 2. Root Cause Analysis
+* The remote peer lost its public static IPv4 address, leaving no routable IPv4 endpoint for `rath15nas` to initiate connections to.
+* In WireGuard's peer-to-peer cryptographic routing model, only one peer needs a static public IP and port forward, while the other can roam behind dynamic IPs or CGNAT using keepalive packets.
+
+#### 3. Action & Remediation Plan
+1. **Automation Script:** Developed [`scripts/reconfigure-wireguard-listener.sh`](scripts/reconfigure-wireguard-listener.sh) and [`scripts/deploy-wireguard-listener.ps1`](scripts/deploy-wireguard-listener.ps1).
+2. **Proxmox Host Reconfiguration:**
+   * Updated `/etc/wireguard/wg0.conf` to set `ListenPort = 51820` under `[Interface]`.
+   * Removed stale outbound `Endpoint = maslen.id.au:51820` under `[Peer]`.
+   * Restarted `wg-quick@wg0.service`.
+3. **Gateway NAT Forwarding:**
+   * Added UDP port forward on TP-Link Deco M9 (`192.168.68.1`): External `51820/UDP` $\rightarrow$ `192.168.68.169:51820`.
+4. **Peer Configuration Update:**
+   * Remote peer configured Ben's endpoint as `Endpoint = 157.85.240.10:51820` with `PersistentKeepalive = 25`.
+5. **Validation:**
+   * Handshake established successfully (`rath15nas` dynamically learned peer roaming endpoint `115.70.61.168:50284`).
+   * ICMP ping to `10.10.0.1` succeeded (0% loss, ~19ms latency).
+   * ICMP ping to `192.168.6.1` succeeded from both `rath15nas` (~19ms) and Windows workstation (~26ms).
+
+#### 4. Prevention & Lessons Learned
+* **Asymmetric NAT Topology:** When one party possesses a guaranteed static public IPv4 and the other is subject to residential dynamic IP / CGNAT reallocation, the peer with the static IP should always act as the listening hub endpoint.
+* **Keepalive Resilience:** Outbound `PersistentKeepalive = 25` on the roaming dynamic peer preserves stateful firewall pinholes across ISP IP shifts.
 
 ### INC-20260913-01: WireGuard Tunnel Outage due to Peer ISP Migration & Stale Host DNS
 

@@ -4,6 +4,87 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), with architectural changes recorded in Architectural Decision Record (ADR) format.
 
+## [2026-09-20]
+
+### ADR: WireGuard Endpoint Role Reversal to Ben Dedicated Static IPv4 (`157.85.240.10:51820`)
+
+#### Context
+1. **Peer Static IP Loss & IPv4 DNS Deprecation:** The remote peer router (Brother) lost its static public IPv4 address, and its dynamic DNS domain (`maslen.id.au`) transitioned exclusively to an IPv6 `AAAA` record (`2401:d002:b504:3300::1`), dropping all IPv4 records. Because `rath15nas` was acting as an outbound initiator seeking `maslen.id.au:51820`, the site-to-site VPN link experienced a ~1.7-day outage.
+2. **Asymmetric Network Topology:** Ben's Neptune Internet connection (`AS151660`) was validated to possess a dedicated, permanent static public IPv4 address (`157.85.240.10`) with PTR `ip-157.85.240.10.neptune.net.au`. Reversing endpoint roles allows the brother to connect outbound from behind dynamic IP or CGNAT, relying on WireGuard dynamic endpoint roaming.
+
+#### Action
+1. **Proxmox Host Reconfiguration (`rath15nas`):**
+   * Staged and executed [`scripts/reconfigure-wireguard-listener.sh`](scripts/reconfigure-wireguard-listener.sh).
+   * Updated `/etc/wireguard/wg0.conf` to set `ListenPort = 51820` under `[Interface]`.
+   * Removed stale outbound `Endpoint = maslen.id.au:51820` under `[Peer]`, configuring `rath15nas` as a passive listening endpoint.
+   * Restarted `wg-quick@wg0.service`. Verified socket binding on `0.0.0.0:51820` and `[::]:51820`.
+2. **Deco M9 Router Port Forwarding:**
+   * Configured external port forward on TP-Link Deco M9 (`192.168.68.1`): `UDP 51820` $\rightarrow$ `192.168.68.169:51820`.
+3. **Peer Coordination:**
+   * Provided drop-in configuration for remote peer pointing to `Endpoint = 157.85.240.10:51820` with `PersistentKeepalive = 25`.
+4. **Verification:**
+   * Handshake established immediately (`wg show wg0` confirmed roaming endpoint `115.70.61.168:50284`).
+   * ICMP ping across tunnel to `10.10.0.1` succeeded (0% packet loss, ~19ms latency).
+   * Cross-subnet ping to remote LAN `192.168.6.1` succeeded from both `rath15nas` (~19ms) and Windows workstation (~26ms).
+
+#### Consequences
+* **Positive:** Site-to-site VPN tunnel and cross-subnet routing (`192.168.6.0/24`) are fully restored.
+* **Positive:** Brother is completely insulated from future ISP dynamic IP or CGNAT changes; WireGuard automatically updates its roaming endpoint upon receiving keepalive packets.
+* **Security:** Public attack surface remains strictly bounded to a single silent UDP port (`51820`).
+
+---
+
+### ADR: Mobile Road-Warrior Client Provisioning (`10.10.0.5/32`) & Split-Tunneling
+
+#### Context
+Operator required secure, encrypted remote access to homelab services (Jellyfin, Books, Proxmox GUI, Samba shares, and remote brother network) while away from home on mobile cellular or untrusted Wi-Fi.
+
+#### Action
+1. **Provisioning Script:** Created [`scripts/add-wireguard-client.sh`](scripts/add-wireguard-client.sh) and [`scripts/deploy-add-client.ps1`](scripts/deploy-add-client.ps1).
+2. **Key Generation & Dynamic Peer Registration:**
+   * Generated dedicated Curve25519 keypair on `rath15nas`.
+   * Dynamically registered peer `10.10.0.5/32` using `wg set wg0 peer <pubkey> allowed-ips 10.10.0.5/32` with zero downtime to the active brother tunnel.
+   * Persisted peer block in `/etc/wireguard/wg0.conf`.
+3. **LAN Egress NAT Masquerade:**
+   * Added `iptables -t nat -A POSTROUTING -s 10.10.0.0/24 -o vmbr0 -j MASQUERADE` and persisted rule in `wg0.conf` `PostUp`/`PostDown`.
+4. **Client Profile & Terminal QR Code:**
+   * Generated split-tunnel client configuration with `AllowedIPs = 192.168.68.0/24, 192.168.6.0/24, 10.10.0.0/24` and DNS set to AdGuard Home (`192.168.68.175`).
+   * Rendered ANSI UTF-8 QR code in terminal using `qrencode`.
+   * Securely wiped client private keys and temporary profiles from server disk post-scan.
+
+#### Consequences
+* **Positive:** Operator can securely connect from anywhere via official WireGuard app on Google Pixel phone.
+* **Positive:** Split-tunnel design routes homelab and DNS traffic over VPN while preserving direct cellular speeds for general internet streaming.
+* **Positive:** Network-wide ad-blocking and `*.dixon.home` resolution are active on mobile data via AdGuard Home.
+
+---
+
+### ADR: Homepage Dashboard ("Dixon Fleet") & Uptime Kuma 24/7 Monitoring Deployment
+
+#### Context
+Operator and family required a unified, clean application launcher (matching brother's "Maslen Fleet" dashboard) and 24/7 service uptime monitoring with incident alerting.
+
+#### Action
+1. **Uptime Kuma Deployment:**
+   * Provisioned `louislam/uptime-kuma:1` Docker stack under `/opt/stacks/uptime-kuma/compose.yaml` attached to `gateway_net`.
+   * Configured Caddy routes at `https://status.dixon.home` and `https://status.192.168.68.175.nip.io` (plain HTTP at `http://status.192.168.68.175.nip.io`).
+2. **Homepage Dashboard Deployment:**
+   * Provisioned `ghcr.io/gethomepage/homepage:latest` Docker stack under `/opt/stacks/homepage/compose.yaml` attached to `gateway_net`.
+   * Configured read-only bind mount `/var/run/docker.sock:/var/run/docker.sock:ro` for live container health telemetry and CPU/RAM telemetry.
+   * Set `HOMEPAGE_ALLOWED_HOSTS=*` in container environment to support Caddy reverse proxy headers.
+   * Configured Caddy routes at `https://home.dixon.home` and `https://home.192.168.68.175.nip.io` (plain HTTP at `http://home.192.168.68.175.nip.io`).
+   * Pre-populated service catalog with local services (Jellyfin, Audiobookshelf, Calibre-Web, Proxmox, Dockge, FileBrowser, AdGuard, Uptime Kuma) and remote brother services (Jellyfin 2, Books 2, Maslen Fleet).
+3. **Local PKI Distribution Endpoint:**
+   * Configured Caddy endpoint `http://pki.192.168.68.175.nip.io/root.crt` to facilitate downloading Caddy's root CA certificate for client device trust on Android/iOS.
+4. **FileBrowser Database Permission Remediation:**
+   * Diagnosed container restart loop caused by `Error: open /database/filebrowser.db: permission denied`.
+   * Set database file permissions to `0664` owned by `1001:1001` (matching unprivileged container UID), restoring FileBrowser to `Up (healthy)`.
+
+#### Consequences
+* **Positive:** Centralized, responsive start page ("Dixon Fleet") provides single-click access to all homelab and remote brother services with live status dots.
+* **Positive:** 24/7 monitoring active via Uptime Kuma for continuous health checks and alerting.
+* **Positive:** All 11 Docker containers on LXC 920 are confirmed healthy.
+
 ## [2026-09-13]
 
 ### ADR: Dynamic WireGuard Endpoint Migration (`maslen.id.au`) & DNS Resolver Remediation

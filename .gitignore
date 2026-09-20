@@ -1,0 +1,19 @@
+# Secrets & Keys
+*.key
+*.pem
+*.pfx
+*.env
+*.env.*
+
+# Local agent artifacts & logs
+.agents/
+
+# Backups & Temporary files
+*.bak
+*.bak.*
+*.tmp
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+desktop.ini
