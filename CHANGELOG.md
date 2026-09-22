@@ -20,8 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 2. **Network Design:**
    * Configured primary network interface attached to `vmbr0` (Management LAN `192.168.68.0/24`).
    * Placing the VM directly in the same Layer 2 broadcast domain as Google Nest speakers enables zero-configuration mDNS and Google Cast protocol discovery without requiring multicast forwarding proxies.
-3. **Architecture Synchronization:**
-   * Updated [`ARCHITECTURE.md`](ARCHITECTURE.md) Section 4 with VM 940 specifications and integration topology.
+3. **Ingress & Reverse Proxy Routing:**
+   * Authored and executed [`scripts/configure-caddy-ha.sh`](scripts/configure-caddy-ha.sh) and [`scripts/deploy-caddy-ha.ps1`](scripts/deploy-caddy-ha.ps1) on LXC 920.
+   * Configured Caddy routes for `ha.192.168.68.175.nip.io` and `ha.dixon.home` with automated TLS termination and websocket proxying to `192.168.68.170:80`.
+   * Authorized proxy IP `192.168.68.175` under Home Assistant's trusted proxies.
+4. **Architecture Synchronization:**
+   * Updated [`ARCHITECTURE.md`](ARCHITECTURE.md) Section 4 with VM 940 specifications, Caddy reverse proxy routing, and automation scripts.
 
 #### Consequences
 * **Positive:** Unlocks 100% local, offline-capable smart home automations and sensor coordination independent of ISP uptime.

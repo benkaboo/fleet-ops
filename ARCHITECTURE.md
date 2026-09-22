@@ -145,9 +145,15 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * Direct L2 bridge on `vmbr0` enables native, zero-forwarding mDNS / SSDP broadcast auto-discovery for local smart home hardware:
     * **Google Cast:** Google Nest Audio, Nest Mini, and Chromecast devices for local media playback and Text-to-Speech (TTS) announcements.
     * **Local IoT:** Direct LAN communication with Matter/Thread controllers, local switches, and future USB Zigbee/Z-Wave coordinators via host USB passthrough.
+* **Reverse Proxy & Ingress Routing:**
+  * Configured Caddy routes on LXC 920 (`/opt/stacks/caddy/Caddyfile`) proxying to `192.168.68.170:80`:
+    * HTTPS: `https://ha.dixon.home` and `https://ha.192.168.68.175.nip.io` (internal PKI TLS).
+    * HTTP: `http://ha.192.168.68.175.nip.io` and `http://ha.dixon.home`.
+  * Trusted proxy configuration managed via Home Assistant UI (**Settings > System > Network**) with `192.168.68.175` authorized.
 * **Deployment Automation:**
   * Staged installation script: [`scripts/setup-haos-vm.sh`](scripts/setup-haos-vm.sh)
   * Workstation orchestrator: [`scripts/deploy-haos-vm.ps1`](scripts/deploy-haos-vm.ps1)
+  * Caddy reverse proxy automation: [`scripts/configure-caddy-ha.sh`](scripts/configure-caddy-ha.sh) / [`scripts/deploy-caddy-ha.ps1`](scripts/deploy-caddy-ha.ps1)
 
 ---
 
