@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-27
+
+### Added
+- Added automated pre-flight session handoff launcher (`Start-RemoteGaming.ps1`) to arbitrate physical GPU console ownership over SSH.
+- Created `Start Remote Gaming.lnk` desktop shortcut on workstation pairing pre-flight checks with Moonlight client launch.
+- Updated project architecture and quick-start documentation to reflect dynamic DHCP mDNS resolution (`rath15-htpc.local`) and multi-user session management.
+
+---
+
+### Architectural Decision Record (ADR 002): Automated Multi-User Console Handoff
+
+#### Context
+1. **The Problem / Requirement:** In a shared living room HTPC environment, local logins at the TV by other family members (e.g. `dylan_93nze6m`) preempt the physical GPU console (`console`). This pushes the gaming user session (`benka_000`) into a disconnected state (`Disc`). Because Sunshine binds to whichever session holds the physical console, subsequent Moonlight launch requests for Playnite executed in the wrong user context, throwing Windows `ERROR_ACCESS_DENIED (5)`. Disconnect teardowns also periodically deadlocked Sunshine's HTTPS worker thread on port 47984.
+2. **Constraints & Trade-offs:** Preserving the living room TV user's running processes without hard logouts, while enabling frictionless 1-click remote gaming takeover from the workstation without requiring manual SSH terminal commands or physical access to the TV.
+
+#### Action
+1. Created `Start-RemoteGaming.ps1` on the workstation using OpenSSH Ed25519 authentication to query `qwinsta` on `rath15-htpc.local`.
+2. Implemented automated session arbitration: if `benka_000` is disconnected, executes `tscon <SessionId> /dest:console` over SSH to seamlessly attach the gaming session to the console.
+3. Added Sunshine service health probe to automatically restart `SunshineService` if daemon threads are deadlocked.
+4. Generated a desktop shortcut `Start Remote Gaming.lnk` on the workstation pointing to the automated script.
+5. Synchronized documentation across `README.md` and `ARCHITECTURE.md`.
+
+#### Consequences
+* **Positive:** Completely eliminates `ERROR_ACCESS_DENIED (5)` and "Failed to start specified application (Error 0)" launch failures when switching from TV to remote workstation gaming.
+* **Positive:** Background processes belonging to the local TV user remain active in their disconnected session rather than being terminated.
+* **Operational:** User launches games via the "Start Remote Gaming" desktop shortcut rather than launching raw Moonlight directly.
+* **Security:** Operates strictly within authenticated SSH key boundaries (`benka_000`); no credentials exposed in plain text or script arguments.
+
+---
+
 ## [1.0.0] - 2026-09-12
 
 ### Added
