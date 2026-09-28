@@ -12,7 +12,8 @@
 param(
     [string]$HostName = "rath15-htpc.local",
     [string]$TargetUser = "benka_000",
-    [string]$MoonlightPath = "$env:LOCALAPPDATA\Programs\Moonlight\Moonlight.exe"
+    [string]$MoonlightPath = "$env:LOCALAPPDATA\Programs\Moonlight\Moonlight.exe",
+    [string]$AppName = "Playnite Fullscreen"
 )
 
 $ErrorActionPreference = "Stop"
@@ -101,10 +102,16 @@ if (-not $sunshineCheck) {
     Start-Sleep -Seconds 3
 }
 
-# 4. Launch Moonlight Client
-Write-Host "[4/4] Launching Moonlight Client..." -ForegroundColor Cyan
+# 4. Launch Moonlight Client directly into App
 if (Test-Path $MoonlightPath) {
-    Start-Process -FilePath $MoonlightPath
+    if ($AppName) {
+        Write-Host "[4/4] Launching Moonlight directly into '$AppName' on $HostName..." -ForegroundColor Cyan
+        Start-Process -FilePath $MoonlightPath -ArgumentList "stream", $HostName, "`"$AppName`""
+    }
+    else {
+        Write-Host "[4/4] Launching Moonlight Client..." -ForegroundColor Cyan
+        Start-Process -FilePath $MoonlightPath
+    }
     Write-Host "Remote gaming pipeline ready! Enjoy your game." -ForegroundColor Green
 }
 else {
