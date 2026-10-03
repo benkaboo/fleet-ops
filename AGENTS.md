@@ -1,11 +1,11 @@
-﻿# HTPC Host Audit & Architecture Guidelines (rath15-htpc)
+# HTPC Host Audit & Architecture Guidelines (rath15-htpc)
 
 ## Project Purpose
 Maintain an authoritative, version-controlled system architecture (`ARCHITECTURE.md`), changelog (`CHANGELOG.md`), and diagnostic toolchain for the home theater PC (`rath15-htpc`), supporting non-invasive audits and remote maintenance via hardened OpenSSH without disrupting media playback or living room operational stability.
 
 ## Target Node Specifications
 * **Host Identifier:** `rath15-htpc`
-* **Network IP:** `192.168.68.162` (Subnet: `192.168.68.0/24`)
+* **Network IP:** `192.168.68.33` (DHCP lease; Subnet: `192.168.68.0/24`)
 * **Primary Access Method:** OpenSSH (`ssh rath15-htpc` / Ed25519 key-authenticated)
 * **Local User Identity:** `benka_000`
 

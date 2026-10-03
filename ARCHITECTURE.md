@@ -139,8 +139,12 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 * **Apple iCloud Services (`iCloudServices.exe`):** Run on-demand.
 * **Xtreme Download Manager (`XDM`):** Fully uninstalled via MSI uninstaller (`{694CC410-5DD4-40F4-B92C-914FE66313FD}`); bundled Java runtime and application files removed.
 
-### 6.3. Decommissioned / Disabled Services
+### 6.3. Decommissioned / Disabled Services & Drivers
+* **ASUS AsIO Kernel Driver (`AsIO`):** Set to `Disabled` (`Start = 4`). 2012-era kernel driver (`SysWow64\drivers\AsIO.sys`) from legacy ASUS AI Suite II. Blocked on every boot by Windows 11 Memory Integrity / Vulnerable Driver Blocklist (Code Integrity Event 3077 / SCM Event 7026); disabling eliminated the desktop boot error popup.
+* **ASUS AsUpIO Kernel Driver (`AsUpIO`):** Set to `Disabled` (`Start = 4`). Companion legacy driver (`SysWow64\drivers\AsUpIO.sys`) similarly failing boot-load.
 * **ASUS Com Service (`asComSvc`):** Set to `Disabled`. Orphaned ASUS utility service (`atkexComSvc.exe`) that caused recurring 45-second boot timeouts and System Event 7000/7009 errors on the host's MSI MAG B550 TOMAHAWK motherboard.
+* **ASUS HM Com Service (`asHmComSvc`):** Set to `Disabled`. Orphaned hardware monitor service (`aaHMSvc.exe`) from legacy AI Suite II; stopped and disabled.
+* **ASUS System Control Service (`AsSysCtrlService`):** Set to `Disabled`. Orphaned system control service (`AsSysCtrlService.exe`) from legacy AI Suite II; stopped and disabled.
 * **Realtek DHCP Service (`RTLDHCPService`):** Set to `Disabled`. Redundant third-party network helper (`RTLDHCP.exe`) that crashed on startup with System Event 7034; core Windows `Dhcp` client handles all IP addressing natively.
 
 ---
@@ -158,7 +162,7 @@ To reclaim ~3.0–4.5 GB of system memory and prevent idle Chromium/CEF thread c
 * **Workstation Host Alias:** Configured in `~/.ssh/config`:
   ```text
   Host rath15-htpc
-      HostName 192.168.68.162
+      HostName 192.168.68.33
       User benka_000
       IdentityFile ~/.ssh/id_ed25519
   ```
