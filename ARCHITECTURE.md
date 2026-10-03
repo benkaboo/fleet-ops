@@ -116,23 +116,26 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Resources:** 4 vCPUs, 4096 MB RAM, 32 GB SSD root disk on `local-lvm`.
   * **LXC Features:** `nesting=1,keyctl=1` (required for Docker Engine and secure keyrings).
 * **Storage Mounts:**
-  * **SSD Fast Data Root (`/opt/stacks`):** Stores Compose files, container configurations, and local application databases (e.g. Authelia SQLite).
+  * **SSD Fast Data Root (`/opt/stacks`):** GitOps source of truth tracking private repository `git@github.com:benkaboo/homelab-stacks.git` on branch `main` via dedicated read-only deploy key (`~/.ssh/id_ed25519_deploy`). Stores declarative Compose files, proxy rules, and container configs; runtime state and SQLite databases are excluded via `.gitignore`.
   * **Btrfs Media/Pool Bind Mount (`mp0`):** Pass-through from host `/mnt/data/@simba` to container `/mnt/simba` (`/mnt/simba/{Books,Documents,Media,Scripts}`).
 * **Docker Network Topology:**
   * **Bridge Network (`gateway_net`):** Dedicated internal bridge network connecting edge proxies and application services without exposing container ports to the external LAN unnecessarily.
 * **Service Stack Inventory:**
   * **Dockge** (`/opt/stacks/dockge/compose.yaml`): Web Compose management UI exposed on port `5001`, protected by Authelia SSO, routed via Caddy at `https://dockge.dixon.home` and `https://dockge.192.168.68.175.nip.io`.
-  * **Caddy Reverse Proxy** (`/opt/stacks/caddy/compose.yaml`): Edge HTTP/HTTPS reverse proxy on host ports `80` and `443`, joined to `gateway_net`. Dual-stack routing supporting both `*.dixon.home` and `*.192.168.68.175.nip.io` with automated internal PKI TLS certificates.
-  * **Authelia SSO, 2FA & OIDC Provider** (`/opt/stacks/authelia/compose.yaml`): Centralized authentication portal and OpenID Connect (OIDC) provider exposed on port `9091` and joined to `gateway_net`. Multi-domain session cookies configured for both `dixon.home` and `192.168.68.175.nip.io`. User database uses Argon2id password hashing; storage backed by `/opt/stacks/authelia/data/db.sqlite3`. Configured with `X_AUTHELIA_CONFIG_FILTERS=template` for dynamic secret templating and dedicated RSA signing key (`/opt/stacks/authelia/config/oidc.key`) serving registered OIDC clients (e.g. `jellyfin`).
+  * **Caddy Reverse Proxy** (`/opt/stacks/caddy/compose.yaml`): Edge HTTP/HTTPS reverse proxy on host ports `80` and `443`, joined to `gateway_net`. Dual-stack routing supporting both `*.dixon.home` and `*.192.168.68.175.nip.io` with automated internal PKI TLS certificates. Provides forward-auth integration with Authelia and reverse proxy termination for all local container stacks and remote Maslen services.
+  * **LLDAP Identity Provider** (`/opt/stacks/lldap/compose.yaml`): Lightweight LDAP directory server and user management portal exposed on port `3890` (LDAP protocol) and port `17170` (web admin UI), routed via Caddy at `https://ldap.dixon.home` and `https://ldap.192.168.68.175.nip.io`. Joined to `gateway_net`. Authoritative identity source (`dc=home,dc=arpa`) supporting role-based access control groups (`admins`, `family`).
+  * **Authelia SSO, 2FA & OIDC Provider** (`/opt/stacks/authelia/compose.yaml`): Centralized authentication portal and OpenID Connect (OIDC) provider exposed on port `9091` and joined to `gateway_net`. Authenticates against local LLDAP directory (`ldap://lldap:3890`). Multi-domain session cookies configured for both `dixon.home` and `192.168.68.175.nip.io`. Secrets decoupled into `/opt/stacks/authelia/.env` using `HOMELAB_` prefix with `X_AUTHELIA_CONFIG_FILTERS=template`. Serves registered OIDC clients (e.g. `jellyfin`) with dedicated RSA signing key (`/opt/stacks/authelia/config/oidc.key`).
   * **Jellyfin Media Server** (`/opt/stacks/jellyfin/compose.yaml`): Media streaming server exposed on port `8096` and routed via Caddy at `https://jellyfin.dixon.home` and `https://jellyfin.192.168.68.175.nip.io`. Media library mapped read-only from `/mnt/simba/Media`. Configured with application-level OIDC Single Sign-On via `jellyfin-plugin-sso` (v4.0.0.4) using Authelia backend (`client_secret_post`, PAR disabled). Edge proxy uses native routing without forward-auth redirects, preserving smart TV (Sony Android TV) compatibility, Quick Connect, and native mobile clients. Container includes `extra_hosts` mapping `auth.dixon.home:192.168.68.175` and mounts Caddy internal PKI root CA (`/etc/ssl/certs/ca-certificates.crt:ro`) for trusted internal TLS validation.
-  * **Calibre-Web E-Book Library** (`/opt/stacks/calibre-web/compose.yaml`): Digital book management exposed on port `8083` and routed via Caddy at `https://books.dixon.home` and `https://books.192.168.68.175.nip.io`. Configured with linuxserver Calibre-Web mods for cover conversion, backed by `/mnt/simba/Books` with seeded `metadata.db`.
-  * **FileBrowser Web File Manager** (`/opt/stacks/filebrowser/compose.yaml`): Lightweight web file explorer exposed on port `8082`, protected by Authelia SSO, and routed via Caddy at `https://files.dixon.home` and `https://files.192.168.68.175.nip.io`. Mounts the full Btrfs storage root (`/mnt/simba`) for browser-based file management across all shares. Database permissions maintained at `0664` owned by `1000:1000`.
+  * **Calibre-Web E-Book Library** (`/opt/stacks/calibre-web/compose.yaml`): Digital book management exposed on port `8083` and routed via Caddy at `https://books.dixon.home` and `https://books.192.168.68.175.nip.io`. Configured with linuxserver Calibre-Web mods for cover conversion, backed by `/mnt/simba/Books` with seeded `metadata.db`. Supports native LDAP authentication directly to `lldap:3890` enabling OPDS feed authentication for hardware e-readers (Kobo, Kindle).
+  * **FileBrowser Web File Manager** (`/opt/stacks/filebrowser/compose.yaml`): Lightweight web file explorer exposed on port `8082`, protected by Authelia SSO with header authentication (`Remote-User`), and routed via Caddy at `https://files.dixon.home` and `https://files.192.168.68.175.nip.io`. Mounts the full Btrfs storage root (`/mnt/simba`) for browser-based file management across all shares. Database permissions maintained at `0664` owned by `1000:1000`.
   * **AdGuard Home Local DNS & Ad-Blocking** (`/opt/stacks/adguard/compose.yaml`): High-performance DNS server and network-wide privacy sinkhole listening on port `53` (TCP/UDP) and port `8085` (direct web). Routed via Caddy at `https://adguard.dixon.home` and `https://adguard.192.168.68.175.nip.io`. Provides internal DNS rewrites for `*.dixon.home` $\rightarrow$ `192.168.68.175` with zero external DNS leakage.
   * **Audiobookshelf** (`/opt/stacks/audiobookshelf/compose.yaml`): Self-hosted audiobook and podcast server exposed on port `13378` and routed via Caddy at `https://audiobooks.dixon.home` and `https://audiobooks.192.168.68.175.nip.io`. Libraries mapped from `/mnt/simba/Media/Audiobooks` and `/mnt/simba/Media/Podcasts`. Uses native authentication at the proxy level to preserve seamless streaming and offline downloads for official and third-party mobile clients (e.g. Absorb, Plappa) as well as the Progressive Web App (PWA).
-  * **Homepage Dashboard ("Dixon Fleet")** (`/opt/stacks/homepage/compose.yaml`): Modern application launchpad and central homelab portal exposed on port `3000` and routed via Caddy at `https://home.dixon.home` and `https://home.192.168.68.175.nip.io` (plain HTTP at `http://home.192.168.68.175.nip.io`). Integrates directly with `/var/run/docker.sock` for live container health telemetry, CPU/RAM stats, and bookmarks to both local and remote brother services across WireGuard.
+  * **Homepage Dashboard ("Dixon Fleet")** (`/opt/stacks/homepage/compose.yaml`): Modern application launchpad and central homelab portal exposed on port `3000` and routed via Caddy at `https://home.dixon.home` and `https://home.192.168.68.175.nip.io` (plain HTTP at `http://home.192.168.68.175.nip.io`). Integrates directly with `/var/run/docker.sock` for live container health telemetry, CPU/RAM stats, bookmarks to both local and remote brother services across WireGuard, and LLDAP directory tile.
   * **Uptime Kuma Health Monitor** (`/opt/stacks/uptime-kuma/compose.yaml`): 24/7 self-hosted monitoring and incident alerting daemon listening on port `3001` and routed via Caddy at `https://status.dixon.home` and `https://status.192.168.68.175.nip.io`. Continuously monitors container HTTP health, gateway ping, and WireGuard remote peer status with push alerting.
+  * **Rest-Server Backup Target** (`/opt/stacks/rest-server/compose.yaml`): High-performance, append-only restic backup server exposed on port `8000`, joined to `gateway_net` with persistent storage at `/mnt/backups`.
 * **Deployment Automation:**
-  * Modularized scripts located in [`scripts/lxc-setup/`](scripts/lxc-setup/) (`01-create-lxc.sh` through `21-fix-homepage-hosts.sh`).
+  * Declarative GitOps repository (`git@github.com:benkaboo/homelab-stacks.git`) synchronized to `/opt/stacks`.
+  * Legacy modularized provisioning scripts retained in [`scripts/lxc-setup/`](scripts/lxc-setup/) for disaster recovery reference.
 
 ### 4.2. Dedicated Home Automation Host (VM 940: `haos`)
 
@@ -223,6 +226,19 @@ graph TD
   * System User: UID `1003`, primary group `users` (GID 100), shell `/usr/sbin/nologin` (no interactive console/SSH shell access).
   * Scope: Restricted exclusively to `[Media]` share (`/mnt/simba/Media`).
   * Forced Ownership: Samba writes executed under `bjm:bjm` identity (`force user = bjm`, `force group = bjm`) with `0664`/`0775` permissions.
+
+* **GitOps Deploy Key (`~/.ssh/id_ed25519_deploy` on LXC 920):**
+  * Dedicated SSH key pair under `bjm` configured in `~/.ssh/config` for `Host github.com`.
+  * Scope: Registered as a strictly read-only Deploy Key on private GitHub repository `benkaboo/homelab-stacks`.
+  * Role: Autonomous configuration synchronization (`git pull`) for `/opt/stacks` without operator credential exposure.
+
+* **LLDAP Identity Directory (`dc=home,dc=arpa` on LXC 920):**
+  * Central LDAP directory and single source of truth for user authentication and role-based access control (RBAC).
+  * Standard Groups:
+    * `admins`: Administrative access for infrastructure, Dockge, DNS, and hypervisors.
+    * `family`: Read and streaming access for Jellyfin, Calibre-Web, and Audiobookshelf.
+    * `lldap_admin`: Administrative access to manage LLDAP directory schema, users, and groups.
+  * Directory Accounts: `admin` (LDAP service bind account), `bjm` (operator account with `admins`, `family`, `lldap_admin` memberships).
 
 ### 5.2. Sudoers Whitelists
 
