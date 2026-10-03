@@ -17,3 +17,7 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Library Comparison Caches & Reports
+data/
+reports/
