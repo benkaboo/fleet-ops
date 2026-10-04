@@ -136,7 +136,13 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Backrest Backup Orchestrator & Snapshot Explorer** (`/opt/stacks/backrest/compose.yaml`): Centralized web-based Restic management dashboard and snapshot browser exposed on port `9898` and joined to `gateway_net`. Routed via Caddy at `https://backup.dixon.home` and `https://backup.192.168.68.175.nip.io` with internal PKI TLS, strictly restricted by Authelia SSO to `group: admins`. Mounts `/opt/stacks` (read-only) and `/mnt/simba` (read-only). Orchestrates a unified three-tier backup architecture:
     * **`workstation_lenovo_bm`** (`/mnt/backups/workstation`): Ingests daily backups from Lenovo ThinkPad (OneDrive, Code repositories, Calibre library).
     * **`rath15_htpc`** (`/mnt/backups/htpc`): Ingests daily backups from living-room HTPC (user profiles, game saves, configs).
-    * **`services`** (`/mnt/backups/services`): Automated daily snapshot (`stacks_and_databases` plan at 03:00) protecting all LXC 920 microservices, environment secrets, and live SQLite databases (`users.db`, `db.sqlite3`, `dockge.db`, `filebrowser.db`, `app.db`, `kuma.db`) with zero-knowledge operator encryption.
+    * **`services`** (`/mnt/backups/services`): Automated daily snapshots protecting:
+      * **`stacks_and_databases` Plan:** Scheduled daily at 03:00 AEDT, backing up all LXC 920 microservices, environment secrets, and live SQLite databases (`users.db`, `db.sqlite3`, `dockge.db`, `filebrowser.db`, `app.db`, `kuma.db`) with zero-knowledge operator encryption. Retention: 24 hourly, 30 daily, 12 monthly.
+      * **`family_photos` Plan:** Scheduled daily at 04:00 AEDT, backing up `/userdata/simba/Shared-All-Family/Photos` (including synced Google Drive libraries) to the encrypted Btrfs backup pool. Retention: 30 daily, 12 monthly, 5 yearly.
+    * **Server-Side Google Drive Photo Ingestion:**
+      * **Automation:** Managed via systemd service and timer (`rclone-photos-sync.service` / `rclone-photos-sync.timer`) running daily at 02:00 AEDT on LXC 920.
+      * **Ingestion Script:** Executed via `/home/bjm/scripts/sync-gdrive-photos.sh`, logging to `/home/bjm/logs/rclone-photos-sync.log` with logrotate policy (`/etc/logrotate.d/rclone-photos-sync`).
+      * **Safety Constraints:** Uses `scope = drive.readonly` OAuth token to prevent any cloud modification or deletion, and non-destructive `rclone copy` with rate pacing (`--tpslimit 8`) targeting `/mnt/simba/Shared-All-Family/Photos/GoogleDrive`.
     * **Synchronized Maintenance Lifecycle:** Enforces rolling **7-4-12** retention (7 daily, 4 weekly, 12 monthly) and weekly prune execution on Sundays at 02:00 AM across all repositories, with monthly repository integrity checks (`restic check`) on the 1st of every month at 03:00 AM.
 * **Deployment Automation:**
   * Declarative GitOps repository (`git@github.com:benkaboo/homelab-stacks.git`) synchronized to `/opt/stacks`.
