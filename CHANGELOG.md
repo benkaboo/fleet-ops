@@ -6,6 +6,70 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [2026-10-05]
 
+### ADR: Immich Photo Storage Privacy Isolation & Native Batch Ingestion via immich-go
+
+#### Context
+1. **External Library Architecture Flaws:** Historical photos (116 GB / 34,902 assets) were initially mounted as a read-only external library (`/mnt/media/GoogleDrive:ro`). In Immich, external libraries are strictly read-only, preventing users from deleting photos, managing albums natively, or organizing archives from web or mobile apps. This created a fractured "split-brain" where newly uploaded camera roll items lived in native storage while historical photos remained immutable.
+2. **Samba Family Share Privacy Leak:** The initial upload location (`/mnt/simba/Shared-All-Family/Photos/Immich/Uploads`) resided directly inside the Samba family share (`[Shared-All-Family]`). This inadvertently exposed raw photo files and user folders to anyone browsing network shares from Windows Explorer without authentication.
+3. **Ingestion Performance & Resilience:** Ingesting 116 GB of images and videos required automated deduplication, metadata parsing, background job throttling, and fault-tolerant error handling across network interruptions.
+
+#### Action
+1. **Storage Isolation & SMB Separation:**
+   * Removed the temporary read-only external library from Immich.
+   * Relocated Immich upload storage from `/mnt/simba/Shared-All-Family/Photos/Immich` to `/mnt/simba/Immich/Uploads` on `rath15nas`, isolating photo files completely outside Samba network shares.
+   * Updated `UPLOAD_LOCATION=/mnt/simba/Immich/Uploads` in `/opt/stacks/immich/.env` on LXC 920.
+2. **GitOps Repository Synchronization (`benkaboo/homelab-stacks`):**
+   * Updated `immich/.env.example` to reflect the isolated `/mnt/simba/Immich/Uploads` path (`9ff1587`).
+   * Removed obsolete external library volume mount (`/mnt/media/GoogleDrive:ro`) from `immich/compose.yaml` (`16bd0dd`).
+   * Pulled GitOps changes on LXC 920 and restarted the Immich stack.
+3. **High-Throughput Local Ingestion via `immich-go`:**
+   * Installed `immich-go` (v0.32.0) on LXC 920.
+   * Generated dedicated full-access Immich API key.
+   * Authored automated batch ingestion runner (`/home/bjm/immich-import.sh`) executed inside a detached `tmux` session (`immich-import`) targeting `http://127.0.0.1:2283`.
+   * Configured `--on-errors=continue` to gracefully bypass corrupted or non-standard legacy files and ensure uninterrupted batch completion.
+   * Configured automatic pausing of background transcoding and machine learning jobs during bulk upload to dedicate full I/O throughput to the SSD bus (~45 MB/s).
+
+#### Consequences
+* **Positive:** Photo management is 100% unified under native Immich date organization (`YYYY/MM`); full read, write, album management, and deletion unlocked across all clients.
+* **Positive:** Complete network privacy: family members access photos exclusively through authenticated Immich clients; raw files are inaccessible via SMB.
+* **Positive:** Zero risk to original source files; source archive at `/mnt/simba/Shared-All-Family/Photos/GoogleDrive` remains intact until verified.
+* **Positive:** Background machine learning and transcoding automatically resume upon upload completion for GPU-accelerated facial recognition and search embeddings.
+
+---
+
+### ADR: Pascal GPU LXC Passthrough, Docker Container Toolkit Configuration & Workload Acceleration (Jellyfin NVENC + Immich ML CUDA)
+
+#### Context
+1. **Workload Acceleration Demands:** Following host GPU stabilization with driver 580.178.04, LXC 920 (`services`: `192.168.68.175`) required direct GPU hardware acceleration for Jellyfin (NVENC video transcoding) and Immich Machine Learning (facial recognition, image tagging, and CLIP semantic vector search).
+2. **Unprivileged LXC & Cgroup BPF Restrictions:** In unprivileged LXC containers, standard Docker invocations with `--gpus all` fail because the NVIDIA Container Runtime attempts to query device cgroups using `bpf_prog_query(BPF_CGROUP_DEVICE)`, which unprivileged containers are prohibited from executing (`Operation not permitted`).
+3. **CUDA Container Variant:** The default CPU-only Immich ML image (`immich-machine-learning:release`) must be switched to the CUDA-enabled release tag (`release-cuda`) to utilize GPU execution providers.
+
+#### Action
+1. **Proxmox LXC Cgroup & Device Passthrough (`/etc/pve/lxc/920.conf`):**
+   * Configured cgroup2 access for NVIDIA character devices: `cgroup2: 195:* rwm` (NVIDIA driver), `238:* rwm` (NVIDIA caps), and `226:* rwm` (Direct Rendering Manager / DRI).
+   * Bind-mounted device nodes: `/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-modeset`, `/dev/nvidia-uvm`, `/dev/nvidia-uvm-tools`, `/dev/nvidia-caps/*`, and `/dev/dri/*` with permissions `0666`.
+2. **LXC User-Space Libraries & NVIDIA Container Toolkit:**
+   * Installed matching branch 580 user-space libraries (`libnvidia-compute-580`, `nvidia-utils-580`) inside LXC 920.
+   * Configured NVIDIA Container Toolkit repository and installed `nvidia-container-toolkit`.
+   * Set `no-cgroups = true` in `/etc/nvidia-container-runtime/config.toml` to bypass unprivileged cgroup BPF inspection.
+   * Configured Docker daemon (`/etc/docker/daemon.json`) to register the `nvidia` runtime as default.
+3. **Declarative GitOps Service Acceleration (`benkaboo/homelab-stacks`):**
+   * Updated `jellyfin/compose.yaml` with GPU device reservation (`driver: nvidia`, `capabilities: [gpu]`).
+   * Updated `immich/compose.yaml` switching `immich-machine-learning` to `ghcr.io/immich-app/immich-machine-learning:release-cuda` with GPU device reservation.
+   * Committed and pushed to GitHub (`521bb13`), pulled on LXC 920, and recreated containers.
+4. **Verification & Provider Validation:**
+   * Verified GPU passthrough in Docker (`docker run --rm --gpus all ubuntu nvidia-smi`).
+   * Verified Jellyfin hardware acceleration (`docker exec jellyfin nvidia-smi`).
+   * Inspected Immich ML container logs confirming active execution providers: `['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']`.
+
+#### Consequences
+* **Positive:** Unlocked 11 GB VRAM and Pascal compute power for containerized homelab workloads with zero host performance overhead.
+* **Positive:** Immich facial recognition and CLIP semantic search run with hardware acceleration rather than saturating host CPU cores.
+* **Positive:** Jellyfin provides seamless hardware-accelerated transcoding for family streaming.
+* **Positive:** Passthrough configuration is documented and hardened against container restarts and daemon updates.
+
+---
+
 ### ADR: NVIDIA GeForce GTX 1080 Ti Production Driver Deployment & Proxmox Kernel 6.17 DRM Stabilization
 
 #### Context
