@@ -1,5 +1,6 @@
-﻿# Windows & system artifacts
+# Windows & system artifacts
 *.tmp
+*.bak
 *.log
 Thumbs.db
 Desktop.ini
