@@ -14,4 +14,9 @@
    - **Canonical Pattern:**
      1. Stage the script to `/tmp/<script-name>.sh` via `scp`.
      2. Either invoke with interactive TTY (`ssh -t bjm@192.168.68.169 "sudo bash /tmp/<script-name>.sh"`) or have the operator execute `sudo bash /tmp/<script-name>.sh` directly from an active SSH shell on `rath15nas`.
+6. **GitOps Deployment Workflow for LXC 920 (`services`):**
+   - Stacks on `/opt/stacks` track the private GitOps repository `benkaboo/homelab-stacks`.
+   - Never create or edit compose files, reverse proxy rules, or dashboard configs directly on LXC 920 via SSH.
+   - Always author changes in `Projects/homelab-stacks`, commit and push to `origin main`, then pull on LXC 920 (`git -C /opt/stacks pull`).
+   - Hydrate decoupled runtime `.env` secrets on host from `.env.example`.
 
