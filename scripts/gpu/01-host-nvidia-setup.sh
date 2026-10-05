@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Step 1: NVIDIA Host Driver Setup for Proxmox VE / Debian 13 (trixie)
-# Target Host: rath15nas (192.168.68.169)
+# Step 1: NVIDIA Host Driver Setup via Official NVIDIA CUDA Repository (Path B)
+# Target Host: rath15nas (192.168.68.169, Proxmox VE 9 / Debian 13)
+# Driver Branch: cuda-drivers-570 (Native Linux 6.17 DRM API support)
 # Hardware: NVIDIA GeForce GTX 1080 Ti (GP102)
 # ==============================================================================
 set -euo pipefail
 
 echo "======================================================================"
-echo "    NVIDIA Host Driver Setup - rath15nas (Proxmox VE)"
+echo "    NVIDIA Host Driver Setup (Path B: Official NVIDIA 570 Repo)"
+echo "    Target Host: rath15nas (Proxmox VE)"
 echo "======================================================================"
 
 if [[ $EUID -ne 0 ]]; then
@@ -18,17 +20,11 @@ fi
 KERNEL_VER=$(uname -r)
 echo "[*] Detected running kernel: $KERNEL_VER"
 
-# 1. Enable 'non-free' in debian.sources if not already present
-DEBIAN_SOURCES="/etc/apt/sources.list.d/debian.sources"
-if [[ -f "$DEBIAN_SOURCES" ]]; then
-    if ! grep -q "non-free " "$DEBIAN_SOURCES" && ! grep -q "non-free$" "$DEBIAN_SOURCES"; then
-        echo "[*] Adding 'non-free' component to $DEBIAN_SOURCES..."
-        cp "$DEBIAN_SOURCES" "${DEBIAN_SOURCES}.bak.$(date +%Y%m%d%H%M%S)"
-        sed -i 's/Components: main contrib non-free-firmware/Components: main contrib non-free non-free-firmware/g' "$DEBIAN_SOURCES"
-    else
-        echo "[*] 'non-free' component already present in $DEBIAN_SOURCES."
-    fi
-fi
+# 1. Cleanly purge any partially-installed Debian 550 packages
+echo "[*] Cleaning up any previous half-configured NVIDIA packages..."
+dpkg --configure -a || true
+apt-get purge -y "nvidia-*" "libnvidia-*" "libcuda1*" || true
+apt-get autoremove -y || true
 
 # 2. Blacklist open-source nouveau driver
 NOUVEAU_CONF="/etc/modprobe.d/blacklist-nouveau.conf"
@@ -38,17 +34,26 @@ blacklist nouveau
 options nouveau modeset=0
 EOF
 
-# 3. Update APT indices
-echo "[*] Updating APT package cache..."
+# 3. Install Proxmox kernel headers and build prerequisites
+echo "[*] Installing kernel headers and build tools..."
+apt-get update
+apt-get install -y "proxmox-headers-${KERNEL_VER}" dkms build-essential curl gnupg2
+
+# 4. Add official NVIDIA CUDA repository for Debian 12 (compatible with Debian 13/Proxmox)
+KEYRING_DEB="/tmp/cuda-keyring_1.1-1_all.deb"
+echo "[*] Downloading official NVIDIA CUDA keyring..."
+curl -fsSL "https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb" -o "$KEYRING_DEB"
+
+echo "[*] Installing NVIDIA keyring..."
+dpkg -i "$KEYRING_DEB"
+rm -f "$KEYRING_DEB"
+
+echo "[*] Updating package index with NVIDIA repository..."
 apt-get update
 
-# 4. Install Proxmox kernel headers and build prerequisites
-echo "[*] Installing kernel headers for $KERNEL_VER and build tools..."
-apt-get install -y "proxmox-headers-${KERNEL_VER}" dkms build-essential
-
-# 5. Install official NVIDIA driver and utilities
-echo "[*] Installing nvidia-driver and utilities..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-driver nvidia-smi nvidia-modprobe
+# 5. Install official NVIDIA 570 production driver stack
+echo "[*] Installing cuda-drivers-570 (DKMS driver and utilities)..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers-570 nvidia-smi nvidia-modprobe
 
 # 6. Configure persistent module loading
 MODULES_CONF="/etc/modules-load.d/nvidia.conf"
@@ -68,15 +73,15 @@ KERNEL=="nvidia_uvm", RUN+="/usr/bin/nvidia-modprobe -c0 -u"
 SUBSYSTEM=="nvidia*", MODE="0666"
 EOF
 
-# 8. Update initramfs to apply nouveau blacklist into early boot
+# 8. Update initramfs to ensure early boot uses the new configuration
 echo "[*] Updating initramfs..."
 update-initramfs -u -k all
 
 echo ""
 echo "======================================================================"
-echo "    Host Setup Completed Successfully!"
+echo "    NVIDIA 570 Host Setup Completed Successfully!"
 echo "======================================================================"
 echo "[!] IMPORTANT: A host reboot is required to unload 'nouveau' and load"
-echo "    the proprietary 'nvidia' driver into the kernel."
+echo "    the official 'nvidia' 570 driver into the kernel."
 echo "    Reboot command: sudo reboot"
 echo "======================================================================"
