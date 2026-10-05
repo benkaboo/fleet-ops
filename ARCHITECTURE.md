@@ -3,9 +3,11 @@
 ## 1. Host Overview
 
 * **Hostname:** `rath15nas`
-* **Operating System:** Debian GNU/Linux 13 (trixie) / Proxmox VE
+* **Operating System:** Debian GNU/Linux 13 (trixie) / Proxmox VE 9 (Kernel `6.17.2-1-pve`)
 * **Primary IP:** `192.168.68.169/24` (via `vmbr0`)
 * **Default Gateway:** `192.168.68.1`
+* **Dedicated GPU:** NVIDIA GeForce GTX 1080 Ti (11 GB VRAM, GP102, PCI ID `10de:1b06`)
+* **Driver Stack:** NVIDIA 580.178.04 (Proprietary DKMS, CUDA 13.0, APT pinned via `nvidia-driver-pinning-580`)
 
 ---
 
