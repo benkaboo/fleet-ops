@@ -53,7 +53,20 @@ To enable client devices on the local LAN (`192.168.68.0/24`) to route to the re
 * **Workstation Route:**
   * Windows persistent route: `route -p add 192.168.6.0 mask 255.255.255.0 192.168.68.169`
 
+### 2.2. Hardware NIC Watchdog & Self-Healing (`nic0-watchdog.timer`)
 
+To mitigate Intel I217-V (`e1000e`) silicon DMA ring lockups caused by multi-container virtual bridge burst traffic (documented in [ADR-0027](docs/adr/0027-linux-standard-watchdog-daemon-and-immich-workload-regulation.md) and [INC-20261006-01](INCIDENTS.md)):
+
+* **Mechanism:** Native systemd timer (`nic0-watchdog.timer`) executing `/usr/local/bin/nic0-watchdog.sh` every 30 seconds.
+* **Probes:** Tests ICMP reachability to gateway `192.168.68.1`. Performs a double-check probe to avoid false positives on transient packet drop.
+* **Self-Healing Action:** If unreachable for 2 consecutive cycles, executes a software link reset (`ip link set dev nic0 down && sleep 2 && ip link set dev nic0 up`), power-cycling the PHY and re-initializing the `e1000e` descriptor rings without human physical intervention.
+* **Logging & Observability:**
+  * Logs warnings and recovery events directly to the system journal via `logger -t nic0-watchdog` and `/var/log/nic0-watchdog.log`.
+  * Visible in `journalctl -u nic0-watchdog` and `journalctl -p 4`.
+  * Login banner displayed at `/etc/profile.d/99-nic0-watchdog-notice.sh` on interactive console/SSH sessions.
+* **Maintenance Override:**
+  * To temporarily disable during intentional network/router reboots: `sudo systemctl stop nic0-watchdog.timer`
+  * To resume: `sudo systemctl start nic0-watchdog.timer`
 
 ---
 
