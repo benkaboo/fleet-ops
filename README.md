@@ -33,6 +33,9 @@ fleet-ops/
 │   ├── htpc/                           <-- HTPC living room streaming node & 7 ADRs
 │   │   ├── docs/adr/
 │   │   └── scripts/
+│   ├── router/                         <-- Edge gateway router blueprint, firewall rules & configs
+│   │   ├── docs/adr/
+│   │   └── configs/
 │   └── remotegaming/                   <-- Sunshine / Steam headless game streaming scripts
 └── storage/
     └── update_fstab_btrfs.sh           <-- Storage pool mount automation
@@ -47,6 +50,7 @@ All architectural changes across the fleet are documented in lightweight, atomic
 * **[Proxmox ADR Index](hosts/proxmox/docs/adr/README.md)** (25 ADRs)
 * **[Workstation ADR Index](hosts/workstation/docs/adr/README.md)** (13 ADRs)
 * **[HTPC ADR Index](hosts/htpc/docs/adr/README.md)** (7 ADRs)
+* **[Router ADR Index](hosts/router/docs/adr/README.md)** (Pending)
 
 ---
 

@@ -1,0 +1,47 @@
+---
+id: ADR-0001
+title: Gateway Deployment, Subnet Topology & WireGuard Port Forwarding
+date: 2026-10-XX
+status: Draft
+component: Networking & Ingress
+tags: [router, gateway, dhcp, wireguard, firewall, nat]
+---
+
+# ADR-0001: Gateway Deployment, Subnet Topology & WireGuard Port Forwarding
+
+* **Status:** Draft
+* **Date:** 2026-10-XX
+* **Component:** Networking & Ingress
+* **Deciders:** Operator (Ben Maslen), Antigravity AI Agent
+
+---
+
+## Context
+1. **Hardware Upgrade / Migration:** Replacing the existing router with a new gateway appliance to improve throughput, firewall capabilities, and VLAN segmentation.
+2. **Network Topology Boundaries:** The existing Dixon LAN operates on `192.168.68.0/24`. The hypervisor (`192.168.68.169`), services container (`192.168.68.175`), and HTPC (`192.168.68.150`) have hardcoded or reserved configurations that must be preserved to prevent service disruption.
+3. **Inbound WireGuard Ingress:** Remote peer links (`maslen.id.au`) and mobile road-warriors rely on UDP port `51820` arriving at `rath15nas`.
+
+---
+
+## Action
+1. **Gateway Network Configuration:**
+   * Configure LAN IP: `192.168.68.1/24` (or target subnet).
+   * Define DHCP pool range: `192.168.68.100 - 192.168.68.250`.
+   * Configure upstream DNS forwarders: Cloudflare (`1.1.1.1`) and local LAN resolver.
+2. **Static DHCP Leases:**
+   * Bound `192.168.68.169` to Proxmox physical NIC MAC.
+   * Bound `192.168.68.175` to Services LXC 920 MAC.
+   * Bound `192.168.68.150` to HTPC MAC.
+3. **Port Forwarding Rules:**
+   * Forward WAN UDP `51820` -> `192.168.68.169:51820` (WireGuard).
+4. **Verification & Testing:**
+   * Confirmed internet outbound connectivity from all LAN hosts.
+   * Confirmed WireGuard site-to-site handshake: `wg show wg0` on `rath15nas`.
+   * Confirmed internal DNS resolution and Caddy HTTPS certificate renewal.
+
+---
+
+## Consequences
+* **Positive:** Modernized edge security, higher NAT throughput, and unified DHCP reservation management.
+* **Positive:** WireGuard site-to-site VPN link operational across new gateway.
+* **Operational:** Configuration backup exported and sanitized in `hosts/router/configs/`.
