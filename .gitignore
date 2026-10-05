@@ -1,0 +1,28 @@
+# Secrets & Sensitive Material (Rule 4: Zero Secret Leakage)
+*.key
+*.pem
+*.pfx
+*.pkcs12
+*.crt
+*.env
+*.env.*
+*.age
+id_rsa*
+id_ed25519*
+
+# Temporary files & Backups
+*.bak
+*.bak.*
+*.tmp
+*.log
+*.swp
+
+# OS Artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Agent scratch & local runtimes
+.agents/
+scratch/
+tmp/
