@@ -25,7 +25,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # 2. Install watchdog package if not present
-if ! dpkg -l watchdog &>/dev/null; then
+if ! dpkg -s watchdog 2>/dev/null | grep -q "Status: install ok installed"; then
     echo "[*] Installing official Linux watchdog package..."
     apt-get update -y
     apt-get install -y watchdog
