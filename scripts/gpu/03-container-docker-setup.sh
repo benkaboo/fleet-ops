@@ -40,7 +40,11 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit libnv
 echo "[*] Configuring Docker daemon runtime..."
 nvidia-ctk runtime configure --runtime=docker
 
-# 5. Restart Docker daemon
+# 5. Enable no-cgroups = true for unprivileged LXC container compatibility
+echo "[*] Configuring no-cgroups mode in /etc/nvidia-container-runtime/config.toml..."
+sed -i 's/#no-cgroups = false/no-cgroups = true/' /etc/nvidia-container-runtime/config.toml
+
+# 6. Restart Docker daemon
 echo "[*] Restarting Docker daemon..."
 systemctl restart docker
 
