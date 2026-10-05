@@ -1,0 +1,21 @@
+# Environment and secrets
+*.env
+*.key
+*.pem
+*.pfx
+
+# Temporary inspection files and dumps
+*.tmp
+*.bak
+dump/
+scratch/
+*.zip
+*.png
+
+
+# OS artifacts
+Thumbs.db
+Desktop.ini
+
+# AGY local session data
+.gemini/
