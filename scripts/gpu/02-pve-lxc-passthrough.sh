@@ -59,14 +59,16 @@ else
     echo "[*] Appending GPU passthrough rules to $CONF_FILE..."
     cat <<EOF >> "$CONF_FILE"
 
-# --- NVIDIA GPU Passthrough (GeForce GTX 1080 Ti) ---
+# --- NVIDIA GPU & DRI Passthrough (GeForce GTX 1080 Ti) ---
 lxc.cgroup2.devices.allow: c $NV_MAJOR_DEC:* rwm
 lxc.cgroup2.devices.allow: c $UVM_MAJOR_DEC:* rwm
+lxc.cgroup2.devices.allow: c 226:* rwm
 lxc.mount.entry: /dev/nvidia0 dev/nvidia0 none bind,optional,create=file
 lxc.mount.entry: /dev/nvidiactl dev/nvidiactl none bind,optional,create=file
 lxc.mount.entry: /dev/nvidia-uvm dev/nvidia-uvm none bind,optional,create=file
 lxc.mount.entry: /dev/nvidia-uvm-tools dev/nvidia-uvm-tools none bind,optional,create=file
 lxc.mount.entry: /dev/nvidia-modeset dev/nvidia-modeset none bind,optional,create=file
+lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
 EOF
 fi
 

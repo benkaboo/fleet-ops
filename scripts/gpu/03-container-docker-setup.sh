@@ -31,10 +31,10 @@ curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-contai
   sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
   tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
-# 3. Update APT and install nvidia-container-toolkit
-echo "[*] Installing nvidia-container-toolkit..."
+# 3. Update APT and install nvidia-container-toolkit and matching host 580 libraries
+echo "[*] Installing nvidia-container-toolkit and host-matching 580 driver utilities..."
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit
+DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit libnvidia-compute-580 nvidia-utils-580
 
 # 4. Configure Docker daemon to register the NVIDIA runtime
 echo "[*] Configuring Docker daemon runtime..."
