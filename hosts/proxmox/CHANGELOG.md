@@ -7,6 +7,16 @@ For the complete historical record of architectural decisions, see the [ADR Inde
 
 ---
 
+## [2026-10-06]
+
+### [ADR-0027: Linux Standard Watchdog Daemon Provisioning & Immich Workload Regulation](docs/adr/0027-linux-standard-watchdog-daemon-and-immich-workload-regulation.md)
+* **Component:** Networking / System Resilience
+* **Summary:** Deployed Debian standard `watchdog` daemon on `rath15nas` to monitor gateway ping and `nic0`, pairing it with `/usr/local/bin/nic0-repair.sh` to auto-recover Intel I217-V DMA ring hangs in software; applied CPU and memory limits to Immich services in `compose.yaml`.
+
+### [ADR-0026: LXC 920 Memory Scaling & Physical Bridge Link Carrier Recovery](docs/adr/0026-lxc-services-ram-scaling-physical-link-recovery.md)
+* **Component:** Hardware / GPU
+* **Summary:** Tripled LXC 920 memory to 12 GB RAM / 2 GB swap to absorb parallel Immich batch ingestion and CUDA ML workloads; resolved physical switch carrier stall and re-enslaved orphaned virtual interfaces to `vmbr0`.
+
 ## [2026-10-05]
 
 ### [ADR-0025: Immich Photo Storage Privacy Isolation & Native Batch Ingestion](docs/adr/0025-immich-photo-storage-privacy-isolation-immich-go.md)

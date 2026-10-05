@@ -8,6 +8,8 @@ Decisions follow the standard **Context -> Action -> Consequences** format gover
 
 | ID | Date | Component | Title | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| [ADR-0027](0027-linux-standard-watchdog-daemon-and-immich-workload-regulation.md) | 2026-10-06 | Networking / System Resilience | Linux Standard Watchdog Daemon Provisioning & Immich Workload Regulation | Accepted |
+| [ADR-0026](0026-lxc-services-ram-scaling-physical-link-recovery.md) | 2026-10-05 | Hardware / GPU | LXC 920 Memory Scaling (12 GB) & Physical Bridge Link Carrier Recovery | Accepted |
 | [ADR-0025](0025-immich-photo-storage-privacy-isolation-native.md) | 2026-10-05 | Hardware / GPU | Immich Photo Storage Privacy Isolation & Native Batch Ingestion via immich-go | Accepted |
 | [ADR-0024](0024-pascal-gpu-lxc-passthrough-docker-container.md) | 2026-10-05 | Hardware / GPU | Pascal GPU LXC Passthrough, Docker Container Toolkit Configuration & Workload Acceleration (Jellyfin NVENC + Immich ML CUDA) | Accepted |
 | [ADR-0023](0023-nvidia-geforce-gtx-1080-ti-production.md) | 2026-10-05 | Hardware / GPU | NVIDIA GeForce GTX 1080 Ti Production Driver Deployment & Proxmox Kernel 6.17 DRM Stabilization | Accepted |

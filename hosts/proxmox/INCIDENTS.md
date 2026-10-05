@@ -8,6 +8,7 @@ This document tracks operational incidents, outages, investigations, and resolut
 
 | Incident ID | Date | Severity | Affected Service | Impact | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **INC-20261006-01** | 2026-10-06 | Critical | Intel I217-V NIC (`nic0` / `e1000e`) | Total Layer 2 network loss to hypervisor and all hosted containers | Resolved (Mitigation in Progress) |
 | **INC-20260919-01** | 2026-09-19 | High | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down due to peer loss of static IP / IPv4 DNS | Resolved |
 | **INC-20260913-01** | 2026-09-13 | Medium | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down after peer ISP WAN IP migration | Resolved |
 | **INC-20260906-01** | 2026-09-06 | High | WireGuard (`wg-quick@wg0`) | Site-to-site VPN tunnel down; peer unreachable | Resolved |
@@ -15,6 +16,42 @@ This document tracks operational incidents, outages, investigations, and resolut
 ---
 
 ## Detailed Incident Reports
+
+### INC-20261006-01: Intel I217-V Hardware Unit Hang & Total Fleet Network Outage
+
+* **Incident ID:** `INC-20261006-01`
+* **Date & Detection Time:** 2026-10-06 07:17:09 AEST
+* **Failure Inception:** 2026-10-05 ~21:50:00 AEST (detected via HTPC backup timeout at 22:00:02 AEST)
+* **Reported By:** User / Operator (Ben Maslen)
+* **Affected Components:** Physical NIC `nic0` (Intel I217-V, `8086:153B`), Linux bridge `vmbr0`, Proxmox Web GUI, Samba (`simba`), LXC 920 (`services`), VM 940 (`haos`), WireGuard (`wg0`)
+* **Status:** Resolved (Physical link reset executed; application workload regulation applied to Immich; standard Linux hardware watchdog daemon staged)
+
+#### 1. Symptom & Triage
+* **Reported Behavior:** Total loss of connectivity to Proxmox hypervisor (`192.168.68.169`) and all hosted guest services (`*.dixon.home`). Mapped Samba drives disconnected.
+* **Triage Steps:**
+  1. Ping tests to `192.168.68.169`, `192.168.68.175`, `192.168.68.170` failed with 100% loss. Router (`192.168.68.1`) and HTPC (`192.168.68.30`) were healthy.
+  2. Querying HTPC's `C:\ProgramData\restic\backup.log` pinned failure inception to ~21:50–22:00 AEST on 2026-10-05 (`dial tcp 192.168.68.175:8000: connectex timeout`).
+  3. Neighbor inspection on HTPC showed `192.168.68.169` (`74-D0-2B-C5-D7-25`) marked as `Unreachable`.
+  4. Physical cable re-seat restored Layer 2 frames immediately.
+  5. Post-recovery telemetry confirmed host uptime of **15 hours 31 minutes** (host never crashed or rebooted).
+
+#### 2. Root Cause Analysis
+* **Device Identification:** The onboard NIC is an Intel Ethernet Connection I217-V (`PCI_ID=8086:153B`, driver `e1000e`).
+* **Silicon Defect:** Interface error telemetry revealed `315,209 missed packets` at the ring buffer. Under sustained high-throughput burst traffic (concurrence of 116 GB / 35,000 photo ingestion via `immich-go`, unthrottled BullMQ background GPU AI indexing, and HTPC restic backups), the Intel I217-V hardware DMA ring descriptor engine deadlocked.
+* **Failure Mode:** The PHY link LED stayed lit and Linux reported `state UP`, but the controller ceased passing Layer 2 frames. Re-seating the cable flapped PHY voltage, forcing `e1000e` to reset its descriptor rings.
+
+#### 3. Action & Remediation Plan
+1. **Application-Layer Workload Regulation:**
+   * Updated [`homelab-stacks/immich/compose.yaml`](file:///C:/Users/benma/coding/agy_project/Projects/homelab-stacks/immich/compose.yaml) to declare CPU quotas (`cpus: '2.5'` for server, `cpus: '2.0'` for machine learning) and 4 GB memory limits.
+   * Regulated Immich Job Settings worker concurrency down to 1 worker per AI queue.
+2. **Watchdog Daemon Provisioning:**
+   * Authored [`scripts/setup-network-watchdog.sh`](scripts/setup-network-watchdog.sh) and [`scripts/deploy-network-watchdog.ps1`](scripts/deploy-network-watchdog.ps1) deploying Debian standard `watchdog` daemon.
+   * Configured `/etc/watchdog.conf` with `interface = nic0` and `ping = 192.168.68.1`.
+   * Installed self-healing script `/usr/local/bin/nic0-repair.sh` to auto-cycle `nic0` (down/up) upon 3 failed probes, resolving future DMA stalls in software within 30 seconds without requiring physical cable re-seats.
+
+#### 4. Prevention & Lessons Learned
+* **Legacy Silicon Sensitivity:** Haswell-era Intel I217-V NICs cannot absorb unthrottled multi-container virtual bridge bursts without descriptor oversubscription.
+* **Self-Healing Watchdogs:** Standard POSIX/Linux watchdog daemons paired with targeted repair scripts convert potentially hours-long physical intervention outages into sub-minute, zero-touch automated recoveries.
 
 ### INC-20260919-01: WireGuard Tunnel Outage due to Peer Static IP Deprecation (Resolved via Role Reversal)
 
