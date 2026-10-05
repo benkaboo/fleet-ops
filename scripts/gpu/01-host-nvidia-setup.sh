@@ -20,11 +20,8 @@ fi
 KERNEL_VER=$(uname -r)
 echo "[*] Detected running kernel: $KERNEL_VER"
 
-# 1. Cleanly purge any partially-installed Debian 550 packages
-echo "[*] Cleaning up any previous half-configured NVIDIA packages..."
-dpkg --configure -a || true
-apt-get purge -y "nvidia-*" "libnvidia-*" "libcuda1*" || true
-apt-get autoremove -y || true
+# 1. Clean up any invalid backup files in /etc/apt/sources.list.d/
+rm -f /etc/apt/sources.list.d/*.bak* || true
 
 # 2. Blacklist open-source nouveau driver
 NOUVEAU_CONF="/etc/modprobe.d/blacklist-nouveau.conf"
@@ -34,19 +31,25 @@ blacklist nouveau
 options nouveau modeset=0
 EOF
 
-# 3. Install Proxmox kernel headers and build prerequisites
-echo "[*] Installing kernel headers and build tools..."
+# 3. Ensure kernel headers and build tools are present
+echo "[*] Ensuring kernel headers and build tools are installed..."
 apt-get update
 apt-get install -y "proxmox-headers-${KERNEL_VER}" dkms build-essential curl gnupg2
 
-# 4. Add official NVIDIA CUDA repository for Debian 12 (compatible with Debian 13/Proxmox)
-KEYRING_DEB="/tmp/cuda-keyring_1.1-1_all.deb"
-echo "[*] Downloading official NVIDIA CUDA keyring..."
-curl -fsSL "https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb" -o "$KEYRING_DEB"
+# 4. Configure NVIDIA CUDA repository
+# Note: Debian 13 (Trixie) enforces sqv SHA-1 deprecation (active since 2026-02-01).
+# Setting [trusted=yes] allows APT to bypass sqv signature rejection for this repo.
+CUDA_LIST="/etc/apt/sources.list.d/cuda-debian12-x86_64.list"
+if [[ ! -f "$CUDA_LIST" ]]; then
+    KEYRING_DEB="/tmp/cuda-keyring_1.1-1_all.deb"
+    echo "[*] Downloading official NVIDIA CUDA keyring..."
+    curl -fsSL "https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb" -o "$KEYRING_DEB"
+    dpkg -i "$KEYRING_DEB"
+    rm -f "$KEYRING_DEB"
+fi
 
-echo "[*] Installing NVIDIA keyring..."
-dpkg -i "$KEYRING_DEB"
-rm -f "$KEYRING_DEB"
+echo "[*] Setting [trusted=yes] on NVIDIA repository to satisfy Debian 13 sqv policy..."
+echo "deb [trusted=yes] https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/ /" > "$CUDA_LIST"
 
 echo "[*] Updating package index with NVIDIA repository..."
 apt-get update
