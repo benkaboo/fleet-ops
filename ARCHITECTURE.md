@@ -113,7 +113,7 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 * **Container Specifications:**
   * **OS / Template:** Ubuntu 24.04 LTS unprivileged LXC container.
   * **Network:** Static IP `192.168.68.175/24`, Gateway `192.168.68.1`, attached to `vmbr0`.
-  * **Resources:** 4 vCPUs, 4096 MB RAM, 32 GB SSD root disk on `local-lvm`.
+  * **Resources:** 4 vCPUs, 8192 MB RAM, 32 GB SSD root disk on `local-lvm`.
   * **LXC Features:** `nesting=1,keyctl=1` (required for Docker Engine and secure keyrings).
 * **Storage Mounts:**
   * **SSD Fast Data Root (`/opt/stacks`):** GitOps source of truth tracking private repository `git@github.com:benkaboo/homelab-stacks.git` on branch `main` via dedicated read-only deploy key (`~/.ssh/id_ed25519_deploy`). Stores declarative Compose files, proxy rules, and container configs; runtime state and SQLite databases are excluded via `.gitignore`.
