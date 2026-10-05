@@ -1,0 +1,9 @@
+# Logs
+*.log
+DiagOutputDir/
+
+# OS / Editor artifacts
+.vscode/
+Thumbs.db
+Desktop.ini
+.agents/
