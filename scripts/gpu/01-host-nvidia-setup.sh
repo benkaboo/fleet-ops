@@ -48,7 +48,7 @@ apt-get install -y "proxmox-headers-${KERNEL_VER}" dkms build-essential
 
 # 6. Install official NVIDIA 570 production driver stack
 echo "[*] Installing cuda-drivers-570 (DKMS driver and utilities)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers-570 nvidia-smi nvidia-modprobe
+DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers-570
 
 # 7. Configure persistent module loading
 MODULES_CONF="/etc/modules-load.d/nvidia.conf"
