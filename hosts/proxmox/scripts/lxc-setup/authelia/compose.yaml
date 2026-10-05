@@ -1,0 +1,18 @@
+services:
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    volumes:
+      - /opt/stacks/authelia/config:/config
+      - /opt/stacks/authelia/data:/data
+    networks:
+      - gateway_net
+    environment:
+      - TZ=Australia/Sydney
+
+networks:
+  gateway_net:
+    external: true

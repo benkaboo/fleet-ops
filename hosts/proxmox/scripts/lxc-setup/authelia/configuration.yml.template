@@ -1,0 +1,55 @@
+server:
+  address: "tcp://0.0.0.0:9091/"
+
+log:
+  level: "info"
+
+theme: "auto"
+
+telemetry:
+  metrics:
+    enabled: false
+
+identity_validation:
+  reset_password:
+    jwt_secret: "__JWT_SECRET__"
+
+authentication_backend:
+  password_reset:
+    disable: true
+  file:
+    path: "/config/users_database.yml"
+    watch: true
+
+access_control:
+  default_policy: "one_factor"
+  rules:
+    - domain: "auth.__ROOT_DOMAIN__"
+      policy: "bypass"
+    - domain: "*.__ROOT_DOMAIN__"
+      policy: "one_factor"
+
+session:
+  name: "authelia_session"
+  same_site: "lax"
+  secret: "__SESSION_SECRET__"
+  expiration: "1h"
+  inactivity: "15m"
+  cookies:
+    - domain: "__ROOT_DOMAIN__"
+      authelia_url: "https://auth.__ROOT_DOMAIN__"
+      default_redirection_url: "https://__ROOT_DOMAIN__"
+
+regulation:
+  max_retries: 5
+  find_time: "2m"
+  ban_time: "5m"
+
+storage:
+  encryption_key: "__STORAGE_KEY__"
+  local:
+    path: "/data/db.sqlite3"
+
+notifier:
+  filesystem:
+    filename: "/data/notification.txt"

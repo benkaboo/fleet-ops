@@ -1,0 +1,9 @@
+users:
+  bjm:
+    disabled: false
+    displayname: "Ben Maslen"
+    password: "__PASSWORD_HASH__"
+    email: "ben@__ROOT_DOMAIN__"
+    groups:
+      - admins
+      - dev
