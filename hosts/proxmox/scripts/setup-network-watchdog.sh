@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: setup-network-watchdog.sh
-# Purpose: Install and configure Linux standard watchdog daemon on rath15nas
-#          to monitor gateway ping and nic0 interface health, auto-recovering
-#          e1000e DMA ring hangs via /usr/local/bin/nic0-repair.sh.
+# Purpose: Provision native systemd timer watchdog on rath15nas to monitor
+#          gateway reachability and auto-recover Intel e1000e nic0 DMA hangs.
+#          100% VANILLA: Requires ZERO apt packages and zero package mutations.
 # Target Host: rath15nas (Proxmox VE host, run with sudo / as root via bjm)
 # ==============================================================================
 
 set -euo pipefail
 
-GATEWAY_IP="192.168.68.1"
-INTERFACE="nic0"
-REPAIR_SCRIPT="/usr/local/bin/nic0-repair.sh"
-CONFIG_FILE="/etc/watchdog.conf"
+WATCHDOG_SCRIPT="/usr/local/bin/nic0-watchdog.sh"
+SERVICE_FILE="/etc/systemd/system/nic0-watchdog.service"
+TIMER_FILE="/etc/systemd/system/nic0-watchdog.timer"
 
 echo "======================================================================"
-echo "    Configuring Network & Hardware Watchdog Daemon on rath15nas"
+echo "    Configuring Native Systemd Network Watchdog on rath15nas"
 echo "======================================================================"
 
 # 1. Entry Condition Checks
@@ -24,104 +23,84 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# 2. Install watchdog package if not present
-if ! dpkg -s watchdog 2>/dev/null | grep -q "Status: install ok installed"; then
-    echo "[*] Installing official Linux watchdog package..."
-    apt-get update -y
-    apt-get install -y watchdog
-else
-    echo "[*] watchdog package is already installed."
-fi
-
-# 3. Create repair script
-echo "[*] Authoring self-healing repair binary at ${REPAIR_SCRIPT}..."
-cat << 'EOF' > "${REPAIR_SCRIPT}"
+# 2. Author self-healing watchdog runner (zero apt packages required)
+echo "[*] Creating watchdog runner at ${WATCHDOG_SCRIPT}..."
+cat << 'EOF' > "${WATCHDOG_SCRIPT}"
 #!/usr/bin/env bash
-# ==============================================================================
-# Script: nic0-repair.sh
-# Invoked by: Linux watchdog daemon on ping/interface failure
-# Purpose: Perform software link reset on nic0 to clear Intel e1000e DMA ring hang
-# ==============================================================================
 set -euo pipefail
 
-LOG_FILE="/var/log/nic0-repair.log"
 GATEWAY="192.168.68.1"
-TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+INTERFACE="nic0"
+LOG_FILE="/var/log/nic0-watchdog.log"
 
-echo "[${TIMESTAMP}] Watchdog trigger: network test failed ($*). Initiating nic0 software link reset..." >> "${LOG_FILE}"
-
-# Flap the physical link to trigger e1000e controller re-initialization
-ip link set dev nic0 down
-sleep 2
-ip link set dev nic0 up
-sleep 3
-
-# Verify gateway reachability after reset
-if ping -c 1 -W 2 "${GATEWAY}" >/dev/null 2>&1; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: nic0 recovered cleanly; gateway reachable. System reboot averted." >> "${LOG_FILE}"
-    exit 0
-else
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: nic0 reset attempted but gateway still unreachable." >> "${LOG_FILE}"
-    exit 1
+# Check if gateway responds
+if ! ping -c 1 -W 2 "${GATEWAY}" >/dev/null 2>&1; then
+    # Double-check probe to eliminate false positives on transient packet drop
+    sleep 2
+    if ! ping -c 1 -W 2 "${GATEWAY}" >/dev/null 2>&1; then
+        TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+        echo "[${TIMESTAMP}] Gateway ${GATEWAY} unreachable via ${INTERFACE}. Initiating link reset..." >> "${LOG_FILE}"
+        
+        # Reset interface in software to clear Intel e1000e DMA ring hang
+        ip link set dev "${INTERFACE}" down
+        sleep 2
+        ip link set dev "${INTERFACE}" up
+        sleep 3
+        
+        if ping -c 1 -W 2 "${GATEWAY}" >/dev/null 2>&1; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: ${INTERFACE} link reset resolved stall; gateway reachable." >> "${LOG_FILE}"
+        else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: ${INTERFACE} link reset completed but gateway still unreachable." >> "${LOG_FILE}"
+        fi
+    fi
 fi
 EOF
 
-chmod +x "${REPAIR_SCRIPT}"
-echo "[✓] Repair binary installed and executable."
+chmod +x "${WATCHDOG_SCRIPT}"
+echo "[✓] Watchdog runner installed at ${WATCHDOG_SCRIPT}"
 
-# 4. Back up existing watchdog configuration
-if [[ -f "${CONFIG_FILE}" ]]; then
-    BACKUP_FILE="${CONFIG_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
-    echo "[*] Backing up existing ${CONFIG_FILE} to ${BACKUP_FILE}..."
-    cp "${CONFIG_FILE}" "${BACKUP_FILE}"
-fi
+# 3. Create systemd oneshot service
+echo "[*] Creating systemd service unit at ${SERVICE_FILE}..."
+cat << EOF > "${SERVICE_FILE}"
+[Unit]
+Description=Intel e1000e nic0 Link Health Watchdog
+After=network.target
 
-# 5. Author declarative watchdog configuration
-echo "[*] Writing declarative monitoring rules to ${CONFIG_FILE}..."
-cat << EOF > "${CONFIG_FILE}"
-# /etc/watchdog.conf - Managed by fleet-ops
-# Hardware & Network Watchdog Daemon Configuration
-
-watchdog-device = /dev/watchdog
-watchdog-timeout = 60
-
-# Network Telemetry Probes
-ping = ${GATEWAY_IP}
-interface = ${INTERFACE}
-ping-count = 3
-interval = 15
-
-# Dynamic Self-Healing Binary
-repair-binary = ${REPAIR_SCRIPT}
-repair-timeout = 15
-repair-maximum = 3
-
-# System Health & Logging
-log-dir = /var/log/watchdog
-realtime = yes
-priority = 1
-log-tick = 60
+[Service]
+Type=oneshot
+ExecStart=${WATCHDOG_SCRIPT}
 EOF
 
-# Ensure log directory exists
-mkdir -p /var/log/watchdog
+# 4. Create systemd timer unit (probes every 30s)
+echo "[*] Creating systemd timer unit at ${TIMER_FILE}..."
+cat << EOF > "${TIMER_FILE}"
+[Unit]
+Description=Run nic0 Link Health Watchdog Every 30 Seconds
 
-# 6. Enable and restart watchdog service
-echo "[*] Enabling and restarting watchdog.service..."
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=30s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# 5. Enable and start the timer
+echo "[*] Reloading systemd daemon and enabling nic0-watchdog.timer..."
 systemctl daemon-reload
-systemctl enable watchdog.service
-systemctl restart watchdog.service
+systemctl enable --now nic0-watchdog.timer
 
-# 7. Verification
-echo "[*] Verifying watchdog service status..."
-if systemctl is-active --quiet watchdog.service; then
-    echo "[✓] SUCCESS: watchdog.service is ACTIVE and running!"
-    systemctl status watchdog.service --no-pager | head -n 12
+# 6. Verification
+echo "[*] Verifying timer status..."
+if systemctl is-active --quiet nic0-watchdog.timer; then
+    echo "[✓] SUCCESS: nic0-watchdog.timer is ACTIVE and running!"
+    systemctl status nic0-watchdog.timer --no-pager | head -n 10
 else
-    echo "[!] Error: watchdog.service failed to activate." >&2
+    echo "[!] Error: nic0-watchdog.timer failed to activate." >&2
     exit 1
 fi
 
 echo "======================================================================"
-echo "    Watchdog Daemon Successfully Provisioned"
+echo "    Native Systemd Watchdog Successfully Provisioned (100% Vanilla)"
 echo "======================================================================"
