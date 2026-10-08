@@ -7,6 +7,12 @@ For the complete historical record of architectural decisions, see the [ADR Inde
 
 ---
 
+## [2026-10-08]
+
+### [ADR-0028: Immich v3.3.0 Release Upgrade, Ephemeral Storage Pruning & CUDA ML Model Optimization](docs/adr/0028-immich-v330-upgrade-people-sharing-and-resampling.md)
+* **Component:** Applications & Media
+* **Summary:** Upgraded Immich to v3.3.0 across server and CUDA ML containers; resolved LXC 920 32 GB disk boundary via staged container eviction and pruning; executed pre-upgrade PostgreSQL database dump.
+
 ## [2026-10-06]
 
 ### [ADR-0027: Linux Standard Watchdog Daemon Provisioning & Immich Workload Regulation](docs/adr/0027-linux-standard-watchdog-daemon-and-immich-workload-regulation.md)
