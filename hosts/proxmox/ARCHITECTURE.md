@@ -117,9 +117,9 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 | VMID | Type | Name | Status | Memory | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 910 | LXC | `codebox` | Running | - | Development container (`192.168.68.172`) |
-| 920 | LXC | `services` | Running | 4096 MB | Docker services host (`192.168.68.175/24`), Ubuntu 24.04, 4 vCPUs |
+| 920 | LXC | `services` | Running | 12288 MB | Docker services host (`192.168.68.175/24`), Ubuntu 24.04, 4 vCPUs, 64 GB SSD |
 | 930 | LXC | `agcode` | Running | - | Antigravity execution container |
-| 940 | QEMU | `haos` | Provisioning | 2048 MB | Home Assistant OS KVM VM, 2 vCPUs, 32 GB SSD, attached to `vmbr0` |
+| 940 | QEMU | `haos` | Running | 2048 MB | Home Assistant OS KVM VM, 2 vCPUs, 32 GB SSD, attached to `vmbr0` (`192.168.68.170`) |
 | 900 | QEMU | `openwrt` | Stopped | 512 MB | Virtual router / firewall |
 | 901 | QEMU | `test-lan` | Stopped | 512 MB | Isolated test LAN environment |
 
@@ -128,7 +128,7 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
 * **Container Specifications:**
   * **OS / Template:** Ubuntu 24.04 LTS unprivileged LXC container.
   * **Network:** Static IP `192.168.68.175/24`, Gateway `192.168.68.1`, attached to `vmbr0`.
-  * **Resources:** 4 vCPUs, 8192 MB RAM, 32 GB SSD root disk on `local-lvm`.
+  * **Resources:** 4 vCPUs, 12,288 MB RAM, 64 GB SSD root disk on `local-lvm`.
   * **LXC Features:** `nesting=1,keyctl=1` (required for Docker Engine and secure keyrings).
 * **Storage Mounts:**
   * **SSD Fast Data Root (`/opt/stacks`):** GitOps source of truth tracking private repository `git@github.com:benkaboo/homelab-stacks.git` on branch `main` via dedicated read-only deploy key (`~/.ssh/id_ed25519_deploy`). Stores declarative Compose files, proxy rules, and container configs; runtime state and SQLite databases are excluded via `.gitignore`.
@@ -148,6 +148,7 @@ Heterogeneous spinning disk pool configured with Btrfs native chunk mirroring (`
   * **Immich Photo & Video Management** (`/opt/stacks/immich/compose.yaml`): Self-hosted Google Photos alternative exposed internally on port `2283`, joined to `gateway_net`. Routed via Caddy at `https://photos.dixon.home` and `https://photos.192.168.68.175.nip.io` with internal PKI TLS. Configured with application-level OIDC Single Sign-On against Authelia (`immich` client), while retaining native mobile API authentication for background camera roll uploads. Container includes `extra_hosts` mapping `auth.dixon.home:192.168.68.175`, mounts Caddy internal PKI root CA (`/etc/ssl/certs/ca-certificates.crt:ro`), and injects `NODE_EXTRA_CA_CERTS` for trusted backchannel token verification. PostgreSQL database with vector search (`pgvectors`) hosted on SSD fast storage (`/opt/stacks/immich/postgres`), new camera uploads routed to `/mnt/simba/Shared-All-Family/Photos/Immich/Uploads`, and synced Google Drive photos mapped read-only (`/mnt/media/GoogleDrive:ro`) as an External Library.
   * **Homepage Dashboard ("Dixon Fleet")** (`/opt/stacks/homepage/compose.yaml`): Modern application launchpad and central homelab portal exposed on port `3000` and routed via Caddy at `https://home.dixon.home` and `https://home.192.168.68.175.nip.io` (plain HTTP at `http://home.192.168.68.175.nip.io`). Integrates directly with `/var/run/docker.sock` for live container health telemetry, CPU/RAM stats, bookmarks to both local and remote brother services across WireGuard, and LLDAP directory tile.
   * **Uptime Kuma Health Monitor** (`/opt/stacks/uptime-kuma/compose.yaml`): 24/7 self-hosted monitoring and incident alerting daemon listening on port `3001` and routed via Caddy at `https://status.dixon.home` and `https://status.192.168.68.175.nip.io`. Continuously monitors container HTTP health, gateway ping, and WireGuard remote peer status with push alerting.
+  * **Wyoming Whisper GPU Voice Assistant** (`/opt/stacks/wyoming-whisper/compose.yaml`): High-performance offline Speech-to-Text inference engine exposed on TCP port `10300` and joined to `gateway_net`. Built on `linuxserver/faster-whisper:gpu` utilizing GTX 1080 Ti CUDA acceleration with Pascal-tuned compute type (`int8_float32`). Integrates natively with Home Assistant OS (VM 940) via the Wyoming protocol for sub-300ms voice transcription.
   * **Rest-Server Backup Target** (`/opt/stacks/rest-server/compose.yaml`): High-performance, append-only restic backup server exposed on port `8000`, joined to `gateway_net` with persistent storage at `/mnt/backups`. Enforces `--append-only` and `--private-repos` flags to guarantee cryptographic tenant isolation across client endpoints.
   * **Backrest Backup Orchestrator & Snapshot Explorer** (`/opt/stacks/backrest/compose.yaml`): Centralized web-based Restic management dashboard and snapshot browser exposed on port `9898` and joined to `gateway_net`. Routed via Caddy at `https://backup.dixon.home` and `https://backup.192.168.68.175.nip.io` with internal PKI TLS, strictly restricted by Authelia SSO to `group: admins`. Mounts `/opt/stacks` (read-only) and `/mnt/simba` (read-only). Orchestrates a unified three-tier backup architecture:
     * **`workstation_lenovo_bm`** (`/mnt/backups/workstation`): Ingests daily backups from Lenovo ThinkPad (OneDrive, Code repositories, Calibre library).
