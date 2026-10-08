@@ -8,6 +8,7 @@ Decisions follow the standard **Context -> Action -> Consequences** format gover
 
 | ID | Date | Component | Title | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| [ADR-0014](0014-cross-library-calibre-comparator-and-funnel-audit.md) | 2026-10-08 | Applications & Media | Cross-Library Calibre Comparator, Multi-Stage Funnel Audit, and Throttled Staging Pipeline | Accepted |
 | [ADR-0013](0013-deployment-of-asylum-reborn-4k-2k.md) | 2026-09-11 | Gaming & Streaming | Deployment of "Asylum Reborn" 4K/2K HD Texture Overhaul and Standalone Advanced Launcher for Batman: Arkham Asylum | Accepted |
 | [ADR-0012](0012-headless-in-home-game-streaming-via.md) | 2026-09-11 | Gaming & Streaming | Headless In-Home Game Streaming via Steam Remote Play and Zero-LPE Console Handoff to HTPC | Accepted |
 | [ADR-0011](0011-establishment-of-additive-calibre-library-sync.md) | 2026-09-10 | Security & Governance | Establishment of Additive Calibre Library Sync and Consolidation to NAS Media Storage | Accepted |
