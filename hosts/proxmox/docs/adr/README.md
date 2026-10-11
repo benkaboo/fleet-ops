@@ -8,6 +8,7 @@ Decisions follow the standard **Context -> Action -> Consequences** format gover
 
 | ID | Date | Component | Title | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| [ADR-0030](0030-audiobookshelf-authelia-oidc-single-sign-on-integration.md) | 2026-10-11 | Identity & Security | Audiobookshelf Authelia OpenID Connect (OIDC) Single Sign-On Integration & In-Cluster TLS Trust | Accepted |
 | [ADR-0029](0029-gpu-accelerated-wyoming-whisper-speech-to-text-for-home-assistant.md) | 2026-10-08 | Hardware & Acceleration | GPU-Accelerated Wyoming Whisper Speech-to-Text Deployment for Home Assistant | Accepted |
 | [ADR-0028](0028-immich-v330-upgrade-people-sharing-and-resampling.md) | 2026-10-08 | Applications & Media | Immich v3.3.0 Release Upgrade, Ephemeral Storage Pruning & CUDA ML Model Optimization | Accepted |
 | [ADR-0027](0027-linux-standard-watchdog-daemon-and-immich-workload-regulation.md) | 2026-10-06 | Networking / System Resilience | Linux Standard Watchdog Daemon Provisioning & Immich Workload Regulation | Accepted |

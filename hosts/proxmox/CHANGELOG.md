@@ -7,6 +7,12 @@ For the complete historical record of architectural decisions, see the [ADR Inde
 
 ---
 
+## [2026-10-11]
+
+### [ADR-0030: Audiobookshelf Authelia OpenID Connect (OIDC) Single Sign-On Integration & In-Cluster TLS Trust](docs/adr/0030-audiobookshelf-authelia-oidc-single-sign-on-integration.md)
+* **Component:** Identity & Security
+* **Summary:** Integrated Audiobookshelf with Authelia OIDC provider with PKCE S256 and decoupled client secrets; mounted internal PKI CA bundle to resolve in-cluster Node.js backchannel TLS handshake.
+
 ## [2026-10-08]
 
 ### [ADR-0028: Immich v3.3.0 Release Upgrade, Ephemeral Storage Pruning & CUDA ML Model Optimization](docs/adr/0028-immich-v330-upgrade-people-sharing-and-resampling.md)
