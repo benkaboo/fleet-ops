@@ -7,6 +7,18 @@ For the complete historical record of architectural decisions, see the [ADR Inde
 
 ---
 
+## [2026-10-13]
+
+### [ADR-0032: Decommission Containerized AdGuard Home & Realign Edge Ingress to Flint 2 Gateway](docs/adr/0032-decommission-containerized-adguard-home-and-realign-edge-ingress.md)
+* **Component:** Networking & Ingress
+* **Summary:** Decommissioned legacy containerized AdGuard Home on LXC 920; removed dead Caddy reverse proxy definition and updated Homepage dashboard tile to link directly to Flint 2 perimeter router gateway (`http://192.168.68.1:3000`).
+
+## [2026-10-12]
+
+### [ADR-0031: Immich Media Parity Validation, Legacy Video Transcoding & Family Share Decommissioning](docs/adr/0031-immich-media-parity-legacy-video-transcoding-family-share-decommissioning.md)
+* **Component:** Storage & Backup
+* **Summary:** Completed cryptographic SHA-1 validation of 34,902 assets between Google Drive archive and Immich; recovered and transcoded 74 legacy `.asf` home videos to H.264/AAC with timestamps preserved; extracted 66 missing images from ZIP archives into Immich; relocated 41 voice memo recordings to safe audio share; disabled nightly `rclone-photos-sync.timer` to prevent re-download loop; updated Backrest `family_photos` plan to snapshot Immich native library (`/userdata/simba/Immich/Uploads`); decommissioned `/mnt/simba/Shared-All-Family/Photos/GoogleDrive` reclaiming 115 GB on Btrfs storage pool.
+
 ## [2026-10-11]
 
 ### [ADR-0030: Audiobookshelf Authelia OpenID Connect (OIDC) Single Sign-On Integration & In-Cluster TLS Trust](docs/adr/0030-audiobookshelf-authelia-oidc-single-sign-on-integration.md)

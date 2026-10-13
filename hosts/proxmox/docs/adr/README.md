@@ -8,6 +8,8 @@ Decisions follow the standard **Context -> Action -> Consequences** format gover
 
 | ID | Date | Component | Title | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| [ADR-0032](0032-decommission-containerized-adguard-home-and-realign-edge-ingress.md) | 2026-10-13 | Networking & Ingress | Decommission Containerized AdGuard Home & Realign Edge Ingress to Flint 2 Gateway | Accepted |
+| [ADR-0031](0031-immich-media-parity-legacy-video-transcoding-family-share-decommissioning.md) | 2026-10-12 | Storage & Backup | Immich Media Parity Validation, Legacy Video Transcoding & Family Share Decommissioning | Accepted |
 | [ADR-0030](0030-audiobookshelf-authelia-oidc-single-sign-on-integration.md) | 2026-10-11 | Identity & Security | Audiobookshelf Authelia OpenID Connect (OIDC) Single Sign-On Integration & In-Cluster TLS Trust | Accepted |
 | [ADR-0029](0029-gpu-accelerated-wyoming-whisper-speech-to-text-for-home-assistant.md) | 2026-10-08 | Hardware & Acceleration | GPU-Accelerated Wyoming Whisper Speech-to-Text Deployment for Home Assistant | Accepted |
 | [ADR-0028](0028-immich-v330-upgrade-people-sharing-and-resampling.md) | 2026-10-08 | Applications & Media | Immich v3.3.0 Release Upgrade, Ephemeral Storage Pruning & CUDA ML Model Optimization | Accepted |
